@@ -1,5 +1,7 @@
 # Family Recipe App
 
+![Family Recipe App](images/cd_octocat_med.png)
+
 A Flask web application for preserving and sharing family recipes. This platform is dedicated to keeping old recipes alive and accessible while creating and sharing new ones.
 
 ## Features
