@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Recipe App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Welcome to Your Recipe Collection</h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('new_recipe') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Recipe
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for recipe in recipes %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ recipe.title }}</h5>
+                    <p class="card-text">{{ recipe.description[:150] }}{% if recipe.description|length > 150 %}...{% endif %}</p>
+                    <div class="recipe-meta text-muted mb-3">
+                        <small>
+                            <i class="far fa-clock"></i> Prep: {{ recipe.prep_time_minutes }} mins |
+                            Cook: {{ recipe.cook_time_minutes }} mins |
+                            Serves: {{ recipe.servings }}
+                        </small>
+                    </div>
+                    <a href="{{ url_for('recipe', recipe_id=recipe.recipe_id) }}" class="btn btn-outline-primary">View Recipe</a>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>By {{ recipe.author.username }} | {{ recipe.created_at.strftime('%Y-%m-%d') }}</small>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No recipes found. Why not <a href="{{ url_for('new_recipe') }}">add one</a>?
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

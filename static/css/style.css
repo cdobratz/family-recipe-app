@@ -1,0 +1,104 @@
+/* General Styles */
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navigation */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,.05);
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Recipe Cards */
+.recipe-meta {
+    font-size: 0.9rem;
+}
+
+.recipe-footer {
+    font-size: 0.85rem;
+}
+
+/* Forms */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+/* Recipe Instructions */
+.instructions {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+/* Categories */
+.badge {
+    font-size: 0.85rem;
+    padding: 0.4em 0.8em;
+}
+
+/* Landing Page */
+.min-vh-75 {
+    min-height: 75vh;
+}
+
+/* Footer */
+.footer {
+    margin-top: auto;
+    background-color: #f8f9fa;
+    padding: 1rem 0;
+    box-shadow: 0 -2px 4px rgba(0,0,0,.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Custom Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

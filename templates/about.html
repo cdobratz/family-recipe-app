@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}About - Recipe App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="text-center mb-4">About Recipe App</h1>
+                    
+                    <div class="mb-4">
+                        <h3>The Purpose</h3>
+                        <p>This is a platform dedicated to keeping old recipes alive and accessible to all. 
+                        While creating and sharing new recipes. Hoping its a way to bring us together...Our taste buds at least😊 </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h3>Features</h3>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <i class="fas fa-search"></i> Browse recipes from our community
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-plus"></i> Create and share your own recipes
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-bookmark"></i> Save your favorite recipes
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="mb-4">
+                        <h3>How It Works</h3>
+                        <ol class="list-group list-group-numbered">
+                            <li class="list-group-item">Create an account, your family!</li>
+                            <li class="list-group-item">Browse recipes or share your own</li>
+                            <li class="list-group-item">Save recipes you love</li>
+                        </ol>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        {% if not current_user.is_authenticated %}
+                            <p>Ready to start sharing your recipes?</p>
+                            <a href="{{ url_for('register') }}" class="btn btn-primary me-2">Sign Up Now</a>
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Login</a>
+                        {% else %}
+                            <a href="{{ url_for('new_recipe') }}" class="btn btn-primary">Share Your Recipe</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
