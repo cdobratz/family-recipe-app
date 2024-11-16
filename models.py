@@ -30,6 +30,7 @@ class Recipe(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    image_filename = db.Column(db.String(255))  # Store the filename of the uploaded image
     prep_time_minutes = db.Column(db.Integer)
     cook_time_minutes = db.Column(db.Integer)
     servings = db.Column(db.Integer)
