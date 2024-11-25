@@ -5,6 +5,11 @@ from urllib.parse import urlparse
 from config import Config
 from models import db, User, Recipe, Category, Ingredient, RecipeIngredient
 from forms import LoginForm, RegistrationForm, RecipeForm
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -22,6 +27,7 @@ def load_user(id):
 
 @app.route('/')
 def landing():
+    logger.debug('Rendering landing page')
     return render_template('landing.html')
 
 @app.route('/home')
@@ -36,6 +42,7 @@ def about():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    logger.debug('Login route accessed')
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
@@ -49,7 +56,7 @@ def login():
         if not next_page or urlparse(next_page).netloc != '':
             next_page = url_for('home')
         return redirect(next_page)
-    return render_template('login.html', form=form)
+    return render_template('login.html', title='Sign In', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -95,5 +102,12 @@ def recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     return render_template('recipe.html', recipe=recipe)
 
+@app.route('/recipes')
+@login_required
+def recipes():
+    recipes = Recipe.query.all()
+    return render_template('recipes.html', recipes=recipes)
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Add debug mode and use port 5001 instead
+    app.run(debug=True, host='0.0.0.0', port=5001)
