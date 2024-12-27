@@ -1,25 +1,24 @@
-from flask import Flask, render_template, flash, redirect, url_for, request
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask import Flask, render_template, url_for, flash, redirect, request
+from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
+from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from urllib.parse import urlparse
+from flask_bcrypt import Bcrypt
+from models import User, Recipe, RecipeIngredient, Ingredient
+from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
 from config import Config
-from models import db, User, Recipe, Category, Ingredient, RecipeIngredient
-from forms import LoginForm, RegistrationForm, RecipeForm
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Initialize extensions
-db.init_app(app)
+db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-login_manager = LoginManager()
-login_manager.init_app(app)
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Add custom Jinja2 filters
 @app.template_filter('nl2br')
@@ -29,8 +28,8 @@ def nl2br_filter(text):
     return text.replace('\n', '<br>')
 
 @login_manager.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 @app.route('/')
 def landing():
