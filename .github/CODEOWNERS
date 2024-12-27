@@ -1,0 +1,5 @@
+# These owners will be the default owners for everything in the repo
+* @your-username
+
+# Family branch specific files
+/family-specific/ @family-team-members
