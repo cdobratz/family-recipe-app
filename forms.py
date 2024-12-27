@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, TextAreaField, IntegerField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError
+from wtforms import StringField, PasswordField, BooleanField, TextAreaField, IntegerField, SubmitField, FieldList, FormField, DecimalField, SelectField
+from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange
 from models import User
 
 class LoginForm(FlaskForm):
@@ -26,11 +26,28 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError('Please use a different email address.')
 
+class IngredientForm(FlaskForm):
+    ingredient_quantity = DecimalField('Quantity', validators=[DataRequired(), NumberRange(min=0)], places=2)
+    ingredient_unit = SelectField('Unit', choices=[
+        ('cup', 'Cup(s)'),
+        ('tbsp', 'Tablespoon(s)'),
+        ('tsp', 'Teaspoon(s)'),
+        ('oz', 'Ounce(s)'),
+        ('lb', 'Pound(s)'),
+        ('g', 'Gram(s)'),
+        ('ml', 'Milliliter(s)'),
+        ('piece', 'Piece(s)'),
+        ('pinch', 'Pinch'),
+        ('whole', 'Whole')
+    ])
+    ingredient_name = StringField('Ingredient', validators=[DataRequired(), Length(max=100)])
+
 class RecipeForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
-    prep_time = IntegerField('Preparation Time (minutes)', validators=[DataRequired()])
-    cook_time = IntegerField('Cooking Time (minutes)', validators=[DataRequired()])
+    prep_time_minutes = IntegerField('Preparation Time (minutes)', validators=[DataRequired()])
+    cook_time_minutes = IntegerField('Cooking Time (minutes)', validators=[DataRequired()])
     servings = IntegerField('Number of Servings', validators=[DataRequired()])
+    ingredients = FieldList(FormField(IngredientForm), min_entries=1)
     instructions = TextAreaField('Instructions', validators=[DataRequired()])
-    submit = SubmitField('Create Recipe')
+    submit = SubmitField('Save Recipe')

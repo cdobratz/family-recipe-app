@@ -21,6 +21,13 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# Add custom Jinja2 filters
+@app.template_filter('nl2br')
+def nl2br_filter(text):
+    if not text:
+        return ""
+    return text.replace('\n', '<br>')
+
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
@@ -77,7 +84,7 @@ def logout():
     logout_user()
     return redirect(url_for('landing'))
 
-@app.route('/recipe/new', methods=['GET', 'POST'])
+@app.route('/new_recipe', methods=['GET', 'POST'])
 @login_required
 def new_recipe():
     form = RecipeForm()
@@ -85,17 +92,38 @@ def new_recipe():
         recipe = Recipe(
             title=form.title.data,
             description=form.description.data,
-            prep_time_minutes=form.prep_time.data,
-            cook_time_minutes=form.cook_time.data,
-            servings=form.servings.data,
             instructions=form.instructions.data,
-            author=current_user
+            prep_time_minutes=form.prep_time_minutes.data,
+            cook_time_minutes=form.cook_time_minutes.data,
+            servings=form.servings.data,
+            user_id=current_user.user_id
         )
         db.session.add(recipe)
         db.session.commit()
-        flash('Your recipe has been created!')
-        return redirect(url_for('home'))
-    return render_template('recipe_form.html', form=form, title='New Recipe')
+
+        # Add ingredients
+        for ingredient_form in form.ingredients.entries:
+            # Get or create ingredient
+            ingredient = Ingredient.query.filter_by(name=ingredient_form.ingredient_name.data).first()
+            if not ingredient:
+                ingredient = Ingredient(name=ingredient_form.ingredient_name.data)
+                db.session.add(ingredient)
+                db.session.commit()
+
+            # Create recipe ingredient relationship
+            recipe_ingredient = RecipeIngredient(
+                recipe_id=recipe.recipe_id,
+                ingredient_id=ingredient.ingredient_id,
+                quantity=ingredient_form.ingredient_quantity.data,
+                unit=ingredient_form.ingredient_unit.data
+            )
+            db.session.add(recipe_ingredient)
+
+        db.session.commit()
+        flash('Your recipe has been created!', 'success')
+        return redirect(url_for('recipe', recipe_id=recipe.recipe_id))
+
+    return render_template('new_recipe.html', title='New Recipe', form=form)
 
 @app.route('/recipe/<int:recipe_id>')
 def recipe(recipe_id):
@@ -103,10 +131,57 @@ def recipe(recipe_id):
     return render_template('recipe.html', recipe=recipe)
 
 @app.route('/recipes')
-@login_required
 def recipes():
-    recipes = Recipe.query.all()
-    return render_template('recipes.html', recipes=recipes)
+    search_query = request.args.get('q', '')
+    if search_query:
+        # Search in title, description, and instructions
+        search = f"%{search_query}%"
+        recipes = Recipe.query.filter(
+            (Recipe.title.ilike(search)) |
+            (Recipe.description.ilike(search)) |
+            (Recipe.instructions.ilike(search))
+        ).order_by(Recipe.created_at.desc()).all()
+    else:
+        # Get the latest 5 recipes if no search query
+        recipes = Recipe.query.order_by(Recipe.created_at.desc()).limit(5).all()
+    
+    return render_template('recipes.html', recipes=recipes, search_query=search_query)
+
+@app.route('/recipe/<int:recipe_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.author != current_user:
+        flash('You can only edit your own recipes.', 'danger')
+        return redirect(url_for('recipe', recipe_id=recipe_id))
+    
+    form = RecipeForm(obj=recipe)
+    if form.validate_on_submit():
+        recipe.title = form.title.data
+        recipe.description = form.description.data
+        recipe.instructions = form.instructions.data
+        recipe.prep_time_minutes = form.prep_time_minutes.data
+        recipe.cook_time_minutes = form.cook_time_minutes.data
+        recipe.servings = form.servings.data
+        
+        db.session.commit()
+        flash('Recipe has been updated!', 'success')
+        return redirect(url_for('recipe', recipe_id=recipe_id))
+    
+    return render_template('edit_recipe.html', title='Edit Recipe', form=form, recipe=recipe)
+
+@app.route('/recipe/<int:recipe_id>/delete', methods=['POST'])
+@login_required
+def delete_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.author != current_user:
+        flash('You can only delete your own recipes.', 'danger')
+        return redirect(url_for('recipe', recipe_id=recipe_id))
+    
+    db.session.delete(recipe)
+    db.session.commit()
+    flash('Recipe has been deleted.', 'success')
+    return redirect(url_for('recipes'))
 
 if __name__ == '__main__':
     # Add debug mode and use port 5001 instead
