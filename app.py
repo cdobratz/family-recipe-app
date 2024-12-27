@@ -6,6 +6,8 @@ from flask_bcrypt import Bcrypt
 from models import User, Recipe, RecipeIngredient, Ingredient
 from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
 from config import Config
+import logging
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.config.from_object(Config)
