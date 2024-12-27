@@ -31,7 +31,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v3To https://github.com/cdobratz/family-recipe-app.git
+         fbcad44..b3bc091  family -> family
+      
       with:
         python-version: '3.12'
     - name: Install dependencies
