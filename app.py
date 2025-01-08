@@ -3,7 +3,7 @@ from flask_login import LoginManager, UserMixin, login_user, current_user, logou
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
-from models import User, Recipe, RecipeIngredient, Ingredient
+from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType
 from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
 from config import Config
 import logging
@@ -183,6 +183,35 @@ def delete_recipe(recipe_id):
     db.session.commit()
     flash('Recipe has been deleted.', 'success')
     return redirect(url_for('recipes'))
+
+@app.cli.command("init-tags")
+def init_tags():
+    """Initialize tag types and tags."""
+    # Create tag types
+    meal_type = TagType(name='meal')
+    diet_type = TagType(name='diet')
+    db.session.add_all([meal_type, diet_type])
+    db.session.commit()
+
+    # Create meal tags
+    meal_tags = [
+        Tag(name='breakfast', tag_type=meal_type),
+        Tag(name='lunch', tag_type=meal_type),
+        Tag(name='dinner', tag_type=meal_type),
+        Tag(name='snack', tag_type=meal_type),
+        Tag(name='holiday', tag_type=meal_type)
+    ]
+
+    # Create diet tags
+    diet_tags = [
+        Tag(name='gluten free', tag_type=diet_type),
+        Tag(name='vegan', tag_type=diet_type),
+        Tag(name='vegetarian', tag_type=diet_type)
+    ]
+
+    db.session.add_all(meal_tags + diet_tags)
+    db.session.commit()
+    print("Tags initialized successfully!")
 
 if __name__ == '__main__':
     # Add debug mode and use port 5001 instead

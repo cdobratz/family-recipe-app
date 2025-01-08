@@ -60,6 +60,29 @@
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.meal_tags.label(class="form-label") }}
+                                    {{ form.meal_tags(class="form-select", multiple=True) }}
+                                    {% for error in form.meal_tags.errors %}
+                                        <span class="text-danger">{{ error }}</span>
+                                    {% endfor %}
+                                    <div class="form-text">Hold Ctrl/Cmd to select multiple options</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.diet_tags.label(class="form-label") }}
+                                    {{ form.diet_tags(class="form-select", multiple=True) }}
+                                    {% for error in form.diet_tags.errors %}
+                                        <span class="text-danger">{{ error }}</span>
+                                    {% endfor %}
+                                    <div class="form-text">Hold Ctrl/Cmd to select multiple options</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mb-3">
                             {{ form.instructions.label(class="form-label") }}
                             {{ form.instructions(class="form-control", rows="10") }}

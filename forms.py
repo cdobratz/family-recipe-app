@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, TextAreaField, IntegerField, SubmitField, FieldList, FormField, DecimalField, SelectField
+from wtforms import StringField, PasswordField, BooleanField, TextAreaField, IntegerField, SubmitField, FieldList, FormField, DecimalField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange
-from models import User
+from models import User, Tag, TagType
 
 class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -50,4 +50,14 @@ class RecipeForm(FlaskForm):
     servings = IntegerField('Number of Servings', validators=[DataRequired()])
     ingredients = FieldList(FormField(IngredientForm), min_entries=1)
     instructions = TextAreaField('Instructions', validators=[DataRequired()])
+    meal_tags = SelectMultipleField('Meal Type', coerce=int)
+    diet_tags = SelectMultipleField('Diet Type', coerce=int)
     submit = SubmitField('Save Recipe')
+
+    def __init__(self, *args, **kwargs):
+        super(RecipeForm, self).__init__(*args, **kwargs)
+        # Populate the tag choices
+        meal_tags = Tag.query.join(TagType).filter(TagType.name == 'meal').all()
+        diet_tags = Tag.query.join(TagType).filter(TagType.name == 'diet').all()
+        self.meal_tags.choices = [(tag.id, tag.name) for tag in meal_tags]
+        self.diet_tags.choices = [(tag.id, tag.name) for tag in diet_tags]
