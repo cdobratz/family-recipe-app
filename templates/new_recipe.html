@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+
 {% block title %}New Recipe - Family Recipe App{% endblock %}
 
 {% block content %}
@@ -55,31 +56,31 @@
                         <div class="mb-4">
                             <label class="form-label">Ingredients</label>
                             <div id="ingredients-container">
-                                {% for ingredient_form in form.ingredients %}
-                                <div class="ingredient-entry">
-                                    <div class="row align-items-end">
-                                        <div class="col-md-3">
-                                            {{ ingredient_form.ingredient_quantity.label(class="form-label") }}
-                                            {{ ingredient_form.ingredient_quantity(class="form-control") }}
-                                        </div>
-                                        <div class="col-md-3">
-                                            {{ ingredient_form.ingredient_unit.label(class="form-label") }}
-                                            {{ ingredient_form.ingredient_unit(class="form-control") }}
-                                        </div>
-                                        <div class="col-md-4">
-                                            {{ ingredient_form.ingredient_name.label(class="form-label") }}
-                                            {{ ingredient_form.ingredient_name(class="form-control") }}
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="btn btn-danger remove-ingredient w-100">Remove</button>
+                                {% if form.ingredients %}
+                                    {% for ingredient in form.ingredients %}
+                                    <div class="ingredient-entry">
+                                        <div class="row align-items-end">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Quantity</label>
+                                                {{ ingredient.ingredient_quantity(class="form-control") }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Unit</label>
+                                                {{ ingredient.ingredient_unit(class="form-control") }}
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label">Name</label>
+                                                {{ ingredient.ingredient_name(class="form-control") }}
+                                            </div>
+                                            <div class="col-md-1">
+                                                <button type="button" class="btn btn-danger remove-ingredient">×</button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                {% endif %}
                             </div>
-                            <button type="button" id="add-ingredient" class="btn btn-secondary mt-2">
-                                <i class="fas fa-plus me-1"></i>Add Ingredient
-                            </button>
+                            <button type="button" id="add-ingredient" class="btn btn-secondary mt-2">Add Ingredient</button>
                         </div>
 
                         <div class="mb-4">
@@ -101,8 +102,8 @@
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Save Recipe</button>
                         </div>
                     </form>
                 </div>
@@ -110,12 +111,14 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('ingredients-container');
     const addButton = document.getElementById('add-ingredient');
-    let ingredientIndex = {{ form.ingredients|length }};
+    let ingredientIndex = {% if form.ingredients %}{{ form.ingredients|length }}{% else %}0{% endif %};
 
     function createIngredientFields() {
         const div = document.createElement('div');
@@ -128,28 +131,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Unit</label>
-                    <select class="form-control" id="ingredients-${ingredientIndex}-ingredient_unit" name="ingredients-${ingredientIndex}-ingredient_unit">
-                        <option value="cup">Cup(s)</option>
-                        <option value="tbsp">Tablespoon(s)</option>
-                        <option value="tsp">Teaspoon(s)</option>
-                        <option value="oz">Ounce(s)</option>
-                        <option value="lb">Pound(s)</option>
-                        <option value="g">Gram(s)</option>
-                        <option value="ml">Milliliter(s)</option>
-                        <option value="piece">Piece(s)</option>
-                        <option value="pinch">Pinch</option>
-                        <option value="whole">Whole</option>
+                    <select class="form-control" id="ingredients-${ingredientIndex}-ingredient_unit" name="ingredients-${ingredientIndex}-ingredient_unit" required>
+                        <option value="">Select Unit</option>
+                        <option value="cup">Cup</option>
+                        <option value="tbsp">Tablespoon</option>
+                        <option value="tsp">Teaspoon</option>
+                        <option value="oz">Ounce</option>
+                        <option value="lb">Pound</option>
+                        <option value="g">Gram</option>
+                        <option value="ml">Milliliter</option>
+                        <option value="piece">Piece</option>
                     </select>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Ingredient</label>
+                <div class="col-md-5">
+                    <label class="form-label">Name</label>
                     <input class="form-control" id="ingredients-${ingredientIndex}-ingredient_name" name="ingredients-${ingredientIndex}-ingredient_name" required type="text" value="">
                 </div>
-                <div class="col-md-2">
-                    <button type="button" class="btn btn-danger remove-ingredient w-100">Remove</button>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger remove-ingredient">×</button>
                 </div>
-            </div>
-        `;
+            </div>`;
         container.appendChild(div);
         ingredientIndex++;
     }
