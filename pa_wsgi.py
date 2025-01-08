@@ -1,7 +1,9 @@
 import os
 import sys
+from app import app as application
 
 # Add your project directory to the sys.path
+sys.path 
 project_home = '/home/yourusername/family-site'
 if project_home not in sys.path:
     sys.path.insert(0, project_home)

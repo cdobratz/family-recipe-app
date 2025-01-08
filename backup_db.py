@@ -41,5 +41,6 @@ def backup_database():
         logger.error(f'Backup failed: {str(e)}')
         raise
 
+
 if __name__ == '__main__':
     backup_database()
