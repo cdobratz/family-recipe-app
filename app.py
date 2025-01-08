@@ -223,5 +223,5 @@ def init_tags():
 
 
 if __name__ == '__main__':
-    # Add debug mode and use port 5001 instead
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    # Use configuration for debug mode
+    app.run(host='0.0.0.0', port=5001)

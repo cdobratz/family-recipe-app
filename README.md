@@ -1,6 +1,6 @@
 # Family Recipe App
 
-<img src="images/cd_octocat_med.png" width="60%">
+<img src="images/logo.png" width="200px" alt="Family Recipe App Logo">
 
 A Flask web application for preserving and sharing family recipes. This platform is dedicated to keeping old recipes alive and accessible while creating and sharing new ones.
 
@@ -10,9 +10,10 @@ A Flask web application for preserving and sharing family recipes. This platform
 - Recipe Management (Create, Read, Update, Delete)
 - Dynamic Ingredient Management
 - Recipe Search Functionality
-- Latest Recipes Display
-- Responsive Design with Bootstrap
+- Modern, Responsive UI Design
 - Secure Password Management
+- PWA Support with App Icons
+- Family-Friendly Interface
 
 ## Tech Stack
 
@@ -23,11 +24,19 @@ A Flask web application for preserving and sharing family recipes. This platform
 - Flask-WTF for forms
 - Flask-Migrate for database migrations
 - Flask-Bcrypt for password hashing
+- Gunicorn for production deployment
 
 ### Frontend
 - Bootstrap 5 for responsive design
 - Font Awesome for icons
-- Custom JavaScript for dynamic forms
+- Custom CSS with modern design principles
+- Progressive Web App (PWA) features
+- Google Fonts (Poppins)
+
+### Database
+- SQLite for simple deployment
+- Supports up to 2000+ recipes
+- Optimized for family-scale usage (25+ users)
 
 ### Testing & CI/CD
 - pytest for unit testing
@@ -42,8 +51,12 @@ family-site/
 ├── config.py           # Configuration settings
 ├── models.py           # Database models
 ├── forms.py            # Form definitions
+├── extensions.py       # Flask extensions
 ├── templates/          # Jinja2 templates
-├── static/            # Static files (CSS, JS)
+├── static/            
+│   ├── css/           # Stylesheets
+│   ├── js/            # JavaScript files
+│   └── img/           # Images and icons
 ├── tests/             # Test suite
 └── instance/          # Instance-specific files
 ```
@@ -74,10 +87,14 @@ python init_db.py
 
 5. Run the application:
 ```bash
+# Development
 python app.py
+
+# Production
+gunicorn -c gunicorn.conf.py app:app
 ```
 
-The application will be available at `http://localhost:5001`
+The application will be available at `http://localhost:5001` in development mode.
 
 ## Development
 
@@ -94,70 +111,26 @@ flake8 .
 
 ### Branch Strategy
 - `main`: Production-ready code
-- `development`: Active development branch with latest features and improvements
-- `family`: Deployment branch for family members with specific customizations
+- `development`: Active development branch
+- `family`: Deployment branch for family members
 
-### Branch Differences
+## Deployment
 
-#### Family Branch (Current: January 2025)
-The family branch includes specific customizations and features for family use:
-- Recipe Tags System
-  - Meal type tags (breakfast, lunch, dinner, snack, holiday)
-  - Diet type tags (gluten free, vegan, vegetarian)
-- Enhanced Mobile Responsiveness
-  - Improved card layouts
-  - Better form handling on mobile devices
-  - Responsive navigation
-- UI/UX Improvements
-  - Tag selection interface
-  - Loading states and visual feedback
-  - Improved form validation
-  - Search functionality in navigation
-- Family-Specific Content
-  - Customized about page with family contact information
-  - Family-oriented recipe sharing features
+The application is designed for simple deployment on PythonAnywhere:
 
-#### Development Branch
-The development branch contains all features from the family branch plus:
-- Latest code improvements
-- Experimental features
-- Testing implementations
-- Performance optimizations
+1. Supports SQLite database for easy management
+2. Includes Gunicorn configuration
+3. PWA-ready with offline capabilities
+4. Optimized for family-scale usage (25+ users)
+5. Built-in backup support
 
-#### Main Branch
-The main branch maintains the core functionality:
-- Basic recipe management
-- User authentication
-- Essential CRUD operations
-- Stable, production-ready code
+## Recent Updates
 
-### Recent Updates (January 2025)
-1. Added comprehensive recipe tagging system
-2. Improved mobile responsiveness across all pages
-3. Enhanced form validation and user feedback
-4. Added search functionality in navigation
-5. Updated about page with family contact information
-6. Improved visual consistency and UI/UX
-
-## Features in Detail
-
-### Recipe Management
-- Create new recipes with multiple ingredients
-- Dynamic ingredient form with quantity and unit selection
-- Edit existing recipes
-- Delete recipes with confirmation
-- View detailed recipe information
-
-### Search Functionality
-- Search recipes by title, description, or instructions
-- View latest recipes on the main page
-- Filter recipes by category
-
-### User System
-- User registration with email verification
-- Secure password handling
-- User-specific recipe management
-- Profile management
+- Modern UI redesign with improved typography and spacing
+- Added PWA support with custom icons
+- Optimized database for family-scale usage
+- Improved recipe management interface
+- Added custom branding and logos
 
 ## Contributing
 

@@ -12,6 +12,11 @@ class Config:
     
     # Session Configuration
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)
+    SESSION_COOKIE_SECURE = os.environ.get('PRODUCTION', 'false').lower() == 'true'
+    SESSION_COOKIE_HTTPONLY = True
+    
+    # Security Configuration
+    DEBUG = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
     
     # File Upload Configuration
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
