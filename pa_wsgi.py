@@ -13,5 +13,4 @@ os.environ['PRODUCTION'] = 'true'
 os.environ['FLASK_DEBUG'] = 'false'
 os.environ['SECRET_KEY'] = 'your-production-secret-key'  # Change this to a secure value
 
-# Import your app
-from app import app as application
+
