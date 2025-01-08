@@ -94,8 +94,50 @@ flake8 .
 
 ### Branch Strategy
 - `main`: Production-ready code
-- `development`: Active development
-- `family`: Family-specific deployments
+- `development`: Active development branch with latest features and improvements
+- `family`: Deployment branch for family members with specific customizations
+
+### Branch Differences
+
+#### Family Branch (Current: January 2025)
+The family branch includes specific customizations and features for family use:
+- Recipe Tags System
+  - Meal type tags (breakfast, lunch, dinner, snack, holiday)
+  - Diet type tags (gluten free, vegan, vegetarian)
+- Enhanced Mobile Responsiveness
+  - Improved card layouts
+  - Better form handling on mobile devices
+  - Responsive navigation
+- UI/UX Improvements
+  - Tag selection interface
+  - Loading states and visual feedback
+  - Improved form validation
+  - Search functionality in navigation
+- Family-Specific Content
+  - Customized about page with family contact information
+  - Family-oriented recipe sharing features
+
+#### Development Branch
+The development branch contains all features from the family branch plus:
+- Latest code improvements
+- Experimental features
+- Testing implementations
+- Performance optimizations
+
+#### Main Branch
+The main branch maintains the core functionality:
+- Basic recipe management
+- User authentication
+- Essential CRUD operations
+- Stable, production-ready code
+
+### Recent Updates (January 2025)
+1. Added comprehensive recipe tagging system
+2. Improved mobile responsiveness across all pages
+3. Enhanced form validation and user feedback
+4. Added search functionality in navigation
+5. Updated about page with family contact information
+6. Improved visual consistency and UI/UX
 
 ## Features in Detail
 
