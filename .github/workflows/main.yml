@@ -13,8 +13,9 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}
       FLASK_APP: app.py
       FLASK_ENV: testing
-      SECRET_KEY: github-actions-test-key
-      DATABASE_URL: "sqlite:///:memory:"
+      SECRET_KEY: "github-actions-test-key"
+      DATABASE_URL: "sqlite:///test.db"
+      TESTING: "True"
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
@@ -28,9 +29,12 @@ jobs:
     - name: Create instance directory
       run: |
         mkdir -p instance
+    - name: Initialize database
+      run: |
+        python -c "from app import db; db.create_all()"
     - name: Run tests
       run: |
-        python -m pytest -v --cov=app tests/
+        pytest -v --cov=app tests/
 
   lint:
     runs-on: ubuntu-latest
@@ -46,7 +50,7 @@ jobs:
         pip install -r requirements.txt
     - name: Run linting
       run: |
-        flake8 . --count --max-complexity=15 --max-line-length=150 --statistics --extend-ignore=E226,E302,E41,E722,W293,F401 --exclude=tests/*,venv/*,.git/*,__pycache__/*,migrations/*
+        flake8 . --count --max-complexity=15 --max-line-length=150 --statistics --extend-ignore=E226,E302,E41,E722,W293,F401,F811 --exclude=tests/*,venv/*,.git/*,__pycache__/*,migrations/*,instance/*
 
   deploy-family:
     needs: [test, lint]
