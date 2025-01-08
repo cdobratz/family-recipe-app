@@ -5,10 +5,8 @@ from urllib.parse import (
 )
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_bcrypt import Bcrypt
 from config import Config
+from extensions import db, migrate, bcrypt, login_manager
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -17,13 +15,6 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)
-
-# Initialize extensions
-db = SQLAlchemy()
-migrate = Migrate()
-bcrypt = Bcrypt()
-login_manager = LoginManager()
-login_manager.login_view = 'login'
 
 # Initialize all extensions with the app
 db.init_app(app)
