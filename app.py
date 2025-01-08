@@ -7,7 +7,11 @@ from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType
 from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
 from config import Config
 import logging
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse, urlsplit, urlunsplit, quote, quote_plus, unquote, unquote_plus, urlencode, parse_qs, parse_qsl, urljoin, urlsplit, urlunsplit
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -17,10 +21,6 @@ migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 # Add custom Jinja2 filters
 @app.template_filter('nl2br')
