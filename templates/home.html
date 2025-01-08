@@ -3,46 +3,96 @@
 {% block title %}Home - Recipe App{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row mb-4">
+<div class="container py-4">
+    <div class="row mb-4 align-items-center">
         <div class="col-md-8">
-            <h1>Welcome to Your Recipe Collection</h1>
+            <h1 class="mb-0">Your Recipe Collection</h1>
+            <p class="text-muted mb-0">Discover and manage your favorite family recipes</p>
         </div>
-        <div class="col-md-4 text-end">
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
             <a href="{{ url_for('new_recipe') }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add New Recipe
+                <i class="fas fa-plus me-2"></i>Add New Recipe
             </a>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-4">
         {% for recipe in recipes %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title">{{ recipe.title }}</h5>
-                    <p class="card-text">{{ recipe.description[:150] }}{% if recipe.description|length > 150 %}...{% endif %}</p>
+                    <h5 class="card-title text-primary">{{ recipe.title }}</h5>
+                    <p class="card-text text-muted">
+                        {{ recipe.description[:150] }}{% if recipe.description|length > 150 %}...{% endif %}
+                    </p>
                     <div class="recipe-meta text-muted mb-3">
-                        <small>
-                            <i class="far fa-clock"></i> Prep: {{ recipe.prep_time_minutes }} mins |
-                            Cook: {{ recipe.cook_time_minutes }} mins |
-                            Serves: {{ recipe.servings }}
+                        <div class="d-flex flex-wrap gap-3 mb-3">
+                            <small class="d-flex align-items-center">
+                                <i class="far fa-clock me-1"></i>
+                                Prep: {{ recipe.prep_time_minutes }} mins
+                            </small>
+                            <small class="d-flex align-items-center">
+                                <i class="fas fa-fire me-1"></i>
+                                Cook: {{ recipe.cook_time_minutes }} mins
+                            </small>
+                            <small class="d-flex align-items-center">
+                                <i class="fas fa-users me-1"></i>
+                                Serves: {{ recipe.servings }}
+                            </small>
+                        </div>
+                        {% if recipe.tags %}
+                        <div class="mb-3">
+                            {% for tag in recipe.tags %}
+                            <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('recipe', recipe_id=recipe.id) }}" class="btn btn-outline-primary">
+                            View Recipe
+                        </a>
+                        <small class="text-muted">
+                            By {{ recipe.author.username }}
                         </small>
                     </div>
-                    <a href="{{ url_for('recipe', recipe_id=recipe.recipe_id) }}" class="btn btn-outline-primary">View Recipe</a>
                 </div>
-                <div class="card-footer text-muted">
-                    <small>By {{ recipe.author.username }} | {{ recipe.created_at.strftime('%Y-%m-%d') }}</small>
+                <div class="card-footer bg-light">
+                    <small class="text-muted">
+                        Added {{ recipe.created_at.strftime('%B %d, %Y') }}
+                    </small>
                 </div>
             </div>
         </div>
         {% else %}
         <div class="col-12">
-            <div class="alert alert-info">
-                No recipes found. Why not <a href="{{ url_for('new_recipe') }}">add one</a>?
+            <div class="alert alert-info text-center p-5">
+                <i class="fas fa-book-open fa-3x mb-3"></i>
+                <h4>No recipes found</h4>
+                <p class="mb-0">Why not <a href="{{ url_for('new_recipe') }}" class="alert-link">add your first recipe</a>?</p>
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
+
+{% block extra_css %}
+<style>
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    }
+    @media (max-width: 768px) {
+        .card {
+            margin-bottom: 1rem;
+        }
+        .recipe-meta .d-flex {
+            gap: 1rem !important;
+        }
+    }
+</style>
+{% endblock %}
 {% endblock %}

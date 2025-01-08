@@ -3,26 +3,29 @@
 {% block title %}{{ title }} - Recipe App{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="text-center">{{ title }}</h2>
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="text-center mb-0">{{ title }}</h2>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="">
+                    <form method="POST" action="" id="recipeForm" class="needs-validation" novalidate>
                         {{ form.hidden_tag() }}
                         
-                        <div class="mb-3">
+                        <div class="mb-4">
                             {{ form.title.label(class="form-label") }}
-                            {{ form.title(class="form-control") }}
+                            {{ form.title(class="form-control", required=true, minlength="3", maxlength="100") }}
+                            <div class="invalid-feedback">
+                                Please provide a recipe title (3-100 characters).
+                            </div>
                             {% for error in form.title.errors %}
                                 <span class="text-danger">{{ error }}</span>
                             {% endfor %}
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-4">
                             {{ form.description.label(class="form-label") }}
                             {{ form.description(class="form-control", rows="3") }}
                             {% for error in form.description.errors %}
@@ -30,70 +33,64 @@
                             {% endfor %}
                         </div>
 
-                        <div class="row">
+                        <div class="row mb-4">
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    {{ form.prep_time.label(class="form-label") }}
-                                    {{ form.prep_time(class="form-control") }}
-                                    {% for error in form.prep_time.errors %}
-                                        <span class="text-danger">{{ error }}</span>
-                                    {% endfor %}
+                                    {{ form.prep_time_minutes.label(class="form-label") }}
+                                    {{ form.prep_time_minutes(class="form-control", required=true, type="number", min="0") }}
+                                    <div class="invalid-feedback">
+                                        Please enter a valid preparation time.
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
-                                    {{ form.cook_time.label(class="form-label") }}
-                                    {{ form.cook_time(class="form-control") }}
-                                    {% for error in form.cook_time.errors %}
-                                        <span class="text-danger">{{ error }}</span>
-                                    {% endfor %}
+                                    {{ form.cook_time_minutes.label(class="form-label") }}
+                                    {{ form.cook_time_minutes(class="form-control", required=true, type="number", min="0") }}
+                                    <div class="invalid-feedback">
+                                        Please enter a valid cooking time.
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     {{ form.servings.label(class="form-label") }}
-                                    {{ form.servings(class="form-control") }}
-                                    {% for error in form.servings.errors %}
-                                        <span class="text-danger">{{ error }}</span>
-                                    {% endfor %}
+                                    {{ form.servings(class="form-control", required=true, type="number", min="1") }}
+                                    <div class="invalid-feedback">
+                                        Please enter the number of servings.
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
+                        <div class="row mb-4">
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     {{ form.meal_tags.label(class="form-label") }}
-                                    {{ form.meal_tags(class="form-select", multiple=True) }}
-                                    {% for error in form.meal_tags.errors %}
-                                        <span class="text-danger">{{ error }}</span>
-                                    {% endfor %}
-                                    <div class="form-text">Hold Ctrl/Cmd to select multiple options</div>
+                                    {{ form.meal_tags(class="form-select", multiple=True, size=5) }}
+                                    <div class="form-text">Selected: <span id="selectedMealTags"></span></div>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     {{ form.diet_tags.label(class="form-label") }}
-                                    {{ form.diet_tags(class="form-select", multiple=True) }}
-                                    {% for error in form.diet_tags.errors %}
-                                        <span class="text-danger">{{ error }}</span>
-                                    {% endfor %}
-                                    <div class="form-text">Hold Ctrl/Cmd to select multiple options</div>
+                                    {{ form.diet_tags(class="form-select", multiple=True, size=5) }}
+                                    <div class="form-text">Selected: <span id="selectedDietTags"></span></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="mb-3">
+                        <div class="mb-4">
                             {{ form.instructions.label(class="form-label") }}
-                            {{ form.instructions(class="form-control", rows="10") }}
-                            {% for error in form.instructions.errors %}
-                                <span class="text-danger">{{ error }}</span>
-                            {% endfor %}
+                            {{ form.instructions(class="form-control", rows="10", required=true) }}
+                            <div class="invalid-feedback">
+                                Please provide cooking instructions.
+                            </div>
                         </div>
 
                         <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-primary") }}
-                            <a href="{{ url_for('home') }}" class="btn btn-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary btn-lg", id="submitButton") }}
+                            <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </form>
                 </div>
@@ -101,4 +98,39 @@
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.getElementById('recipeForm');
+    const submitButton = document.getElementById('submitButton');
+
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        } else {
+            submitButton.classList.add('loading');
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        }
+        form.classList.add('was-validated');
+    });
+
+    // Tag selection display
+    const mealTags = document.getElementById('meal_tags');
+    const dietTags = document.getElementById('diet_tags');
+    const selectedMealTags = document.getElementById('selectedMealTags');
+    const selectedDietTags = document.getElementById('selectedDietTags');
+
+    function updateSelectedTags(selectElement, displayElement) {
+        const selected = Array.from(selectElement.selectedOptions).map(option => option.text);
+        displayElement.textContent = selected.join(', ') || 'None';
+    }
+
+    mealTags.addEventListener('change', () => updateSelectedTags(mealTags, selectedMealTags));
+    dietTags.addEventListener('change', () => updateSelectedTags(dietTags, selectedDietTags));
+});
+</script>
+{% endblock %}
 {% endblock %}

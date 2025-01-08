@@ -7,7 +7,10 @@ from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType
 from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
 from config import Config
 import logging
-from urllib.parse import urlparse, urlunparse, urlsplit, urlunsplit, quote, quote_plus, unquote, unquote_plus, urlencode, parse_qs, parse_qsl, urljoin, urlsplit, urlunsplit
+from urllib.parse import (
+    urlparse, urlunparse, urlsplit, urlunsplit, quote, quote_plus,
+    unquote, unquote_plus, urlencode, parse_qs, parse_qsl, urljoin
+)
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)

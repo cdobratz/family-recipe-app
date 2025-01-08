@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#212529">
     <title>{% block title %}Recipe App{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -12,7 +13,43 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha384-HjQE6zC8aa/YE7/zQvtYzK6fWGt46ztlO6GrRKGm31x9Rivj9kB0jX2+72h9zpF" crossorigin="anonymous">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .btn-primary {
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .nav-link.active {
+            font-weight: bold;
+            border-bottom: 2px solid #fff;
+        }
+        @media (max-width: 768px) {
+            .navbar-nav {
+                padding: 1rem 0;
+            }
+            .nav-item {
+                padding: 0.5rem 0;
+            }
+            .card {
+                margin-bottom: 1rem;
+            }
+        }
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .form-feedback {
+            display: none;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            border-radius: 0.25rem;
+        }
+        .form-feedback.show {
+            display: block;
+        }
+    </style>
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -30,17 +67,17 @@
                 <ul class="navbar-nav me-auto">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('home') }}">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'home' }}" href="{{ url_for('home') }}">
                                 <i class="fas fa-home me-1"></i>Home
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('new_recipe') }}">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'new_recipe' }}" href="{{ url_for('new_recipe') }}">
                                 <i class="fas fa-plus me-1"></i>Add Recipe
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('recipes') }}">
+                            <a class="nav-link {{ 'active' if request.endpoint == 'recipes' }}" href="{{ url_for('recipes') }}">
                                 <i class="fas fa-book me-1"></i>Recipes
                             </a>
                         </li>
@@ -51,6 +88,12 @@
                         </a>
                     </li>
                 </ul>
+                {% if current_user.is_authenticated %}
+                    <form class="d-flex me-3" action="{{ url_for('recipes') }}" method="GET">
+                        <input class="form-control me-2" type="search" placeholder="Search recipes..." name="q" aria-label="Search">
+                        <button class="btn btn-outline-light" type="submit">Search</button>
+                    </form>
+                {% endif %}
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">

@@ -47,8 +47,13 @@ def create_test_data():
                             'title': 'Grandma\'s Apple Pie',
                             'description': 'A classic family recipe passed down through generations',
                             'ingredients': '2 pie crusts\n6 cups sliced apples\n1 cup sugar\n2 tbsp cinnamon\n1/4 cup butter',
-                            'instructions': '1. Preheat oven to 375°F\n2. Mix apples with sugar and cinnamon\n3. Fill pie crust\n4. Bake for 45 minutes',
-                            'prep_time': '30 minutes',
+                            'instructions': (
+                                '1. Preheat oven to 375°F\n'
+                                '2. Mix apples with sugar and cinnamon\n'
+                                '3. Fill pie crust\n'
+                                '4. Bake for 45 minutes'
+                            ),
+                            'prep_time': '30',
                             'cook_time': '45 minutes',
                             'servings': 8
                         }

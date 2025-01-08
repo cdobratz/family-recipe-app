@@ -1,6 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, TextAreaField, IntegerField, SubmitField, FieldList, FormField, DecimalField, SelectField, SelectMultipleField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, ValidationError, NumberRange
+from wtforms import (
+    StringField, PasswordField, BooleanField, TextAreaField, IntegerField,
+    SubmitField, FieldList, FormField, DecimalField, SelectField, SelectMultipleField
+)
+from wtforms.validators import DataRequired, Email, Length, EqualTo, NumberRange, ValidationError
 from models import User, Tag, TagType
 
 class LoginForm(FlaskForm):
