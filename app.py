@@ -1,14 +1,14 @@
+import logging
+from urllib.parse import (
+    urlparse, urlunparse, urlsplit, urlunsplit, quote, quote_plus,
+    unquote, unquote_plus, urlencode, parse_qs, parse_qsl, urljoin
+)
 from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
 from config import Config
-import logging
-from urllib.parse import (
-    urlparse, urlunparse, urlsplit, urlunsplit, quote, quote_plus,
-    unquote, unquote_plus, urlencode, parse_qs, parse_qsl, urljoin
-)
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -31,9 +31,9 @@ migrate.init_app(app, db)
 bcrypt.init_app(app)
 login_manager.init_app(app)
 
-# Import models after db initialization to avoid circular imports
-from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType
-from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
+# Import models and forms
+from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType  # noqa: E402
+from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm  # noqa: E402
 
 # Add custom Jinja2 filters
 @app.template_filter('nl2br')

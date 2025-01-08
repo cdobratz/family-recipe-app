@@ -25,6 +25,7 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+
 class Recipe(db.Model):
     __tablename__ = 'recipes'
     id = db.Column(db.Integer, primary_key=True)
@@ -44,6 +45,7 @@ class Recipe(db.Model):
     def __repr__(self):
         return f'<Recipe {self.title}>'
 
+
 class Ingredient(db.Model):
     __tablename__ = 'ingredients'
     id = db.Column(db.Integer, primary_key=True)
@@ -51,6 +53,7 @@ class Ingredient(db.Model):
 
     def __repr__(self):
         return f'<Ingredient {self.name}>'
+
 
 class RecipeIngredient(db.Model):
     __tablename__ = 'recipe_ingredients'
@@ -64,11 +67,13 @@ class RecipeIngredient(db.Model):
     def __repr__(self):
         return f'<RecipeIngredient {self.ingredient.name} - {self.quantity} {self.unit}>'
 
+
 class TagType(db.Model):
     __tablename__ = 'tag_types'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     tags = db.relationship('Tag', backref='tag_type', lazy=True)
+
 
 class Tag(db.Model):
     __tablename__ = 'tags'
@@ -76,16 +81,19 @@ class Tag(db.Model):
     name = db.Column(db.String(50), nullable=False)
     tag_type_id = db.Column(db.Integer, db.ForeignKey('tag_types.id'), nullable=False)
 
+
 class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
+
 
 recipe_categories = db.Table(
     'recipe_categories',
     db.Column('recipe_id', db.Integer, db.ForeignKey('recipes.id'), primary_key=True),
     db.Column('category_id', db.Integer, db.ForeignKey('categories.id'), primary_key=True)
 )
+
 
 recipe_tags = db.Table(
     'recipe_tags',
