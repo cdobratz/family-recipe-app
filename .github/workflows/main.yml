@@ -31,9 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python
-      uses: actions/setup-python@v3To https://github.com/cdobratz/family-recipe-app.git
-         fbcad44..b3bc091  family -> family
-      
+      uses: actions/setup-python@v3
       with:
         python-version: '3.12'
     - name: Install dependencies
@@ -51,6 +49,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.12'
     - name: Deploy to family environment
       run: |
-        echo "Deployment steps will be added later"
+        echo "Deploying to family environment..."
+        # Add deployment steps here
