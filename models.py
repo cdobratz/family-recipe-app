@@ -1,9 +1,7 @@
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-
-db = SQLAlchemy()
+from app import db
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -33,24 +31,18 @@ class Recipe(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    image_filename = db.Column(db.String(255))  # Store the filename of the uploaded image
+    image_filename = db.Column(db.String(255))
     prep_time_minutes = db.Column(db.Integer)
     cook_time_minutes = db.Column(db.Integer)
     servings = db.Column(db.Integer)
     instructions = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    categories = db.relationship('Category', secondary='recipe_categories', backref=db.backref('recipes', lazy='dynamic'))
-    tags = db.relationship('Tag', secondary='recipe_tags', backref=db.backref('recipes', lazy='dynamic'))
     ingredients = db.relationship('RecipeIngredient', backref='recipe', lazy=True)
+    tags = db.relationship('Tag', secondary='recipe_tags', backref=db.backref('recipes', lazy='dynamic'))
 
     def __repr__(self):
         return f'<Recipe {self.title}>'
-
-class Category(db.Model):
-    __tablename__ = 'categories'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)
 
 class Ingredient(db.Model):
     __tablename__ = 'ingredients'
@@ -70,12 +62,12 @@ class RecipeIngredient(db.Model):
     ingredient = db.relationship('Ingredient')
 
     def __repr__(self):
-        return f'<RecipeIngredient {self.ingredient.name} - {self.quantity} {self.unit or ""}>'
+        return f'<RecipeIngredient {self.ingredient.name} - {self.quantity} {self.unit}>'
 
 class TagType(db.Model):
     __tablename__ = 'tag_types'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)  # 'meal' or 'diet'
+    name = db.Column(db.String(50), unique=True, nullable=False)
     tags = db.relationship('Tag', backref='tag_type', lazy=True)
 
 class Tag(db.Model):
@@ -84,13 +76,16 @@ class Tag(db.Model):
     name = db.Column(db.String(50), nullable=False)
     tag_type_id = db.Column(db.Integer, db.ForeignKey('tag_types.id'), nullable=False)
 
+class Category(db.Model):
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
 
 recipe_categories = db.Table(
     'recipe_categories',
     db.Column('recipe_id', db.Integer, db.ForeignKey('recipes.id'), primary_key=True),
     db.Column('category_id', db.Integer, db.ForeignKey('categories.id'), primary_key=True)
 )
-
 
 recipe_tags = db.Table(
     'recipe_tags',

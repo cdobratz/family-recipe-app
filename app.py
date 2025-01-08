@@ -3,8 +3,6 @@ from flask_login import LoginManager, UserMixin, login_user, current_user, logou
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
-from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType
-from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
 from config import Config
 import logging
 from urllib.parse import (
@@ -16,14 +14,26 @@ from urllib.parse import (
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)
 
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-bcrypt = Bcrypt(app)
-login_manager = LoginManager(app)
+# Initialize extensions
+db = SQLAlchemy()
+migrate = Migrate()
+bcrypt = Bcrypt()
+login_manager = LoginManager()
 login_manager.login_view = 'login'
+
+# Initialize all extensions with the app
+db.init_app(app)
+migrate.init_app(app, db)
+bcrypt.init_app(app)
+login_manager.init_app(app)
+
+# Import models after db initialization to avoid circular imports
+from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType
+from forms import RegistrationForm, LoginForm, RecipeForm, IngredientForm
 
 # Add custom Jinja2 filters
 @app.template_filter('nl2br')
