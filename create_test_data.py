@@ -98,6 +98,7 @@ def create_test_data():
             print(f"Error in create_test_data: {e}")
             db.session.rollback()
 
+
 if __name__ == '__main__':
     create_test_data()
     print("Test data creation complete!")

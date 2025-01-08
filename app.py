@@ -190,29 +190,33 @@ def delete_recipe(recipe_id):
 @app.cli.command("init-tags")
 def init_tags():
     """Initialize tag types and tags."""
-    # Create tag types
-    meal_type = TagType(name='meal')
-    diet_type = TagType(name='diet')
-    db.session.add_all([meal_type, diet_type])
-    db.session.commit()
+    # Create tag types if they don't exist
+    meal_type = TagType.query.filter_by(name='meal').first()
+    if not meal_type:
+        meal_type = TagType(name='meal')
+        db.session.add(meal_type)
+    
+    diet_type = TagType.query.filter_by(name='diet').first()
+    if not diet_type:
+        diet_type = TagType(name='diet')
+        db.session.add(diet_type)
 
-    # Create meal tags
-    meal_tags = [
-        Tag(name='breakfast', tag_type=meal_type),
-        Tag(name='lunch', tag_type=meal_type),
-        Tag(name='dinner', tag_type=meal_type),
-        Tag(name='snack', tag_type=meal_type),
-        Tag(name='holiday', tag_type=meal_type)
-    ]
-
-    # Create diet tags
-    diet_tags = [
-        Tag(name='gluten free', tag_type=diet_type),
-        Tag(name='vegan', tag_type=diet_type),
-        Tag(name='vegetarian', tag_type=diet_type)
-    ]
-
-    db.session.add_all(meal_tags + diet_tags)
+    # Create meal tags if they don't exist
+    meal_tags = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert']
+    for tag_name in meal_tags:
+        tag = Tag.query.filter_by(name=tag_name, tag_type_id=meal_type.id).first()
+        if not tag:
+            tag = Tag(name=tag_name, tag_type=meal_type)
+            db.session.add(tag)
+    
+    # Create diet tags if they don't exist
+    diet_tags = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Low-Carb']
+    for tag_name in diet_tags:
+        tag = Tag.query.filter_by(name=tag_name, tag_type_id=diet_type.id).first()
+        if not tag:
+            tag = Tag(name=tag_name, tag_type=diet_type)
+            db.session.add(tag)
+    
     db.session.commit()
     print("Tags initialized successfully!")
 
