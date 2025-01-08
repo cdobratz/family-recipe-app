@@ -99,9 +99,9 @@ def new_recipe():
             description=form.description.data,
             instructions=form.instructions.data,
             prep_time_minutes=form.prep_time_minutes.data,
-            cook_time_minutes=form.cook_time_minutes.data,
+            cook_time_minutes=form.cook_time_minutes.data or 0,
             servings=form.servings.data,
-            user_id=current_user.user_id
+            user_id=current_user.id
         )
         db.session.add(recipe)
         db.session.commit()
@@ -117,16 +117,16 @@ def new_recipe():
 
             # Create recipe ingredient relationship
             recipe_ingredient = RecipeIngredient(
-                recipe_id=recipe.recipe_id,
-                ingredient_id=ingredient.ingredient_id,
-                quantity=ingredient_form.ingredient_quantity.data,
+                recipe_id=recipe.id,
+                ingredient_id=ingredient.id,
+                quantity=float(ingredient_form.ingredient_quantity.data),
                 unit=ingredient_form.ingredient_unit.data
             )
             db.session.add(recipe_ingredient)
 
         db.session.commit()
         flash('Your recipe has been created!', 'success')
-        return redirect(url_for('recipe', recipe_id=recipe.recipe_id))
+        return redirect(url_for('recipe', recipe_id=recipe.id))
 
     return render_template('new_recipe.html', title='New Recipe', form=form)
 

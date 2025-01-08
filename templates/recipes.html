@@ -4,20 +4,20 @@
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h1>
+            <h1 class="recipe-title">
                 <i class="fas fa-book me-2"></i>Family Recipes
                 {% if search_query %}
                 <small class="text-muted">Search results for: {{ search_query }}</small>
-                {% else %}
-                <small class="text-muted">Latest Recipes</small>
                 {% endif %}
             </h1>
         </div>
         <div class="col-md-4">
-            <form class="d-flex" action="{{ url_for('recipes') }}" method="get">
-                <input class="form-control me-2" type="search" placeholder="Search recipes..." name="q" value="{{ search_query }}">
-                <button class="btn btn-outline-primary" type="submit">Search</button>
-            </form>
+            <div class="search-container">
+                <form class="d-flex" action="{{ url_for('recipes') }}" method="get">
+                    <input class="form-control me-2" type="search" placeholder="Search recipes..." name="q" value="{{ search_query }}">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </form>
+            </div>
         </div>
     </div>
     

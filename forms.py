@@ -48,9 +48,9 @@ class IngredientForm(FlaskForm):
 class RecipeForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(max=100)])
     description = TextAreaField('Description')
-    prep_time_minutes = IntegerField('Preparation Time (minutes)', validators=[DataRequired()])
-    cook_time_minutes = IntegerField('Cooking Time (minutes)', validators=[DataRequired()])
-    servings = IntegerField('Number of Servings', validators=[DataRequired()])
+    prep_time_minutes = IntegerField('Preparation Time (minutes)', validators=[DataRequired(), NumberRange(min=0)])
+    cook_time_minutes = IntegerField('Cooking Time (minutes)', validators=[NumberRange(min=0)])
+    servings = IntegerField('Number of Servings', validators=[DataRequired(), NumberRange(min=1)])
     ingredients = FieldList(FormField(IngredientForm), min_entries=1)
     instructions = TextAreaField('Instructions', validators=[DataRequired()])
     meal_tags = SelectMultipleField('Meal Type', coerce=int)

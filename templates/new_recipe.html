@@ -1,141 +1,164 @@
 {% extends "base.html" %}
-
 {% block title %}New Recipe - Family Recipe App{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="row">
         <div class="col-md-8 offset-md-2">
-            <h1 class="mb-4">New Recipe</h1>
-            
-            <form method="POST" action="">
-                {{ form.hidden_tag() }}
-                
-                <div class="mb-3">
-                    {{ form.title.label(class="form-label") }}
-                    {{ form.title(class="form-control") }}
-                    {% for error in form.title.errors %}
-                    <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                </div>
+            <div class="card">
+                <div class="card-body">
+                    <h1 class="card-title mb-4">New Recipe</h1>
+                    
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control") }}
+                            {% for error in form.title.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
 
-                <div class="mb-3">
-                    {{ form.description.label(class="form-label") }}
-                    {{ form.description(class="form-control") }}
-                    {% for error in form.description.errors %}
-                    <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                </div>
+                        <div class="mb-4">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows="3") }}
+                            {% for error in form.description.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
 
-                <div class="row mb-3">
-                    <div class="col">
-                        {{ form.prep_time_minutes.label(class="form-label") }}
-                        {{ form.prep_time_minutes(class="form-control") }}
-                        {% for error in form.prep_time_minutes.errors %}
-                        <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="col">
-                        {{ form.cook_time_minutes.label(class="form-label") }}
-                        {{ form.cook_time_minutes(class="form-control") }}
-                        {% for error in form.cook_time_minutes.errors %}
-                        <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="col">
-                        {{ form.servings.label(class="form-label") }}
-                        {{ form.servings(class="form-control") }}
-                        {% for error in form.servings.errors %}
-                        <span class="text-danger">{{ error }}</span>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Ingredients</label>
-                    <div id="ingredients-container">
-                        {% for ingredient_form in form.ingredients %}
-                        <div class="ingredient-entry row mb-2">
-                            <div class="col-2">
-                                {{ ingredient_form.ingredient_quantity(class="form-control", placeholder="Amount") }}
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                {{ form.prep_time_minutes.label(class="form-label") }}
+                                {{ form.prep_time_minutes(class="form-control") }}
+                                {% for error in form.prep_time_minutes.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
                             </div>
-                            <div class="col-3">
-                                {{ ingredient_form.ingredient_unit(class="form-control") }}
+                            <div class="col-md-4">
+                                {{ form.cook_time_minutes.label(class="form-label") }}
+                                {{ form.cook_time_minutes(class="form-control", value="0") }}
+                                {% for error in form.cook_time_minutes.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
                             </div>
-                            <div class="col-6">
-                                {{ ingredient_form.ingredient_name(class="form-control", placeholder="Ingredient name") }}
-                            </div>
-                            <div class="col-1">
-                                <button type="button" class="btn btn-danger remove-ingredient">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                            <div class="col-md-4">
+                                {{ form.servings.label(class="form-label") }}
+                                {{ form.servings(class="form-control") }}
+                                {% for error in form.servings.errors %}
+                                <span class="text-danger">{{ error }}</span>
+                                {% endfor %}
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                    <button type="button" class="btn btn-secondary" id="add-ingredient">
-                        <i class="fas fa-plus"></i> Add Ingredient
-                    </button>
-                </div>
 
-                <div class="mb-3">
-                    {{ form.instructions.label(class="form-label") }}
-                    {{ form.instructions(class="form-control", rows=10) }}
-                    {% for error in form.instructions.errors %}
-                    <span class="text-danger">{{ error }}</span>
-                    {% endfor %}
-                </div>
+                        <div class="mb-4">
+                            <label class="form-label">Ingredients</label>
+                            <div id="ingredients-container">
+                                {% for ingredient_form in form.ingredients %}
+                                <div class="ingredient-entry">
+                                    <div class="row align-items-end">
+                                        <div class="col-md-3">
+                                            {{ ingredient_form.ingredient_quantity.label(class="form-label") }}
+                                            {{ ingredient_form.ingredient_quantity(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            {{ ingredient_form.ingredient_unit.label(class="form-label") }}
+                                            {{ ingredient_form.ingredient_unit(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            {{ ingredient_form.ingredient_name.label(class="form-label") }}
+                                            {{ ingredient_form.ingredient_name(class="form-control") }}
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-danger remove-ingredient w-100">Remove</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <button type="button" id="add-ingredient" class="btn btn-secondary mt-2">
+                                <i class="fas fa-plus me-1"></i>Add Ingredient
+                            </button>
+                        </div>
 
-                <div class="mb-3">
-                    {{ form.submit(class="btn btn-primary") }}
-                    <a href="{{ url_for('recipes') }}" class="btn btn-secondary">Cancel</a>
+                        <div class="mb-4">
+                            {{ form.instructions.label(class="form-label") }}
+                            {{ form.instructions(class="form-control", rows="5", placeholder="Enter step-by-step instructions...") }}
+                            {% for error in form.instructions.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                {{ form.meal_tags.label(class="form-label") }}
+                                {{ form.meal_tags(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.diet_tags.label(class="form-label") }}
+                                {{ form.diet_tags(class="form-select") }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
-{% endblock %}
-
-{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('ingredients-container');
     const addButton = document.getElementById('add-ingredient');
     let ingredientIndex = {{ form.ingredients|length }};
 
-    function createIngredientEntry() {
-        const template = container.children[0].cloneNode(true);
-        const inputs = template.getElementsByTagName('input');
-        const selects = template.getElementsByTagName('select');
-        
-        // Update input names and IDs
-        for (let input of inputs) {
-            input.name = input.name.replace('-0-', `-${ingredientIndex}-`);
-            input.id = input.id.replace('-0-', `-${ingredientIndex}-`);
-            input.value = '';
-        }
-        for (let select of selects) {
-            select.name = select.name.replace('-0-', `-${ingredientIndex}-`);
-            select.id = select.id.replace('-0-', `-${ingredientIndex}-`);
-        }
-
+    function createIngredientFields() {
+        const div = document.createElement('div');
+        div.className = 'ingredient-entry';
+        div.innerHTML = `
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Quantity</label>
+                    <input class="form-control" id="ingredients-${ingredientIndex}-ingredient_quantity" name="ingredients-${ingredientIndex}-ingredient_quantity" required type="text" value="">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Unit</label>
+                    <select class="form-control" id="ingredients-${ingredientIndex}-ingredient_unit" name="ingredients-${ingredientIndex}-ingredient_unit">
+                        <option value="cup">Cup(s)</option>
+                        <option value="tbsp">Tablespoon(s)</option>
+                        <option value="tsp">Teaspoon(s)</option>
+                        <option value="oz">Ounce(s)</option>
+                        <option value="lb">Pound(s)</option>
+                        <option value="g">Gram(s)</option>
+                        <option value="ml">Milliliter(s)</option>
+                        <option value="piece">Piece(s)</option>
+                        <option value="pinch">Pinch</option>
+                        <option value="whole">Whole</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ingredient</label>
+                    <input class="form-control" id="ingredients-${ingredientIndex}-ingredient_name" name="ingredients-${ingredientIndex}-ingredient_name" required type="text" value="">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger remove-ingredient w-100">Remove</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
         ingredientIndex++;
-        return template;
     }
 
-    // Add new ingredient entry
-    addButton.addEventListener('click', function() {
-        container.appendChild(createIngredientEntry());
-    });
+    addButton.addEventListener('click', createIngredientFields);
 
-    // Remove ingredient entry
     container.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-ingredient')) {
-            const entry = e.target.closest('.ingredient-entry');
-            if (container.children.length > 1) {
-                entry.remove();
-            }
+        if (e.target.classList.contains('remove-ingredient')) {
+            e.target.closest('.ingredient-entry').remove();
         }
     });
 });
