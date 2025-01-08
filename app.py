@@ -230,9 +230,6 @@ def init_tags():
     db.session.commit()
     print("Tags initialized successfully!")
 
-
-
-
 if __name__ == '__main__':
     # Add debug mode and use port 5001 instead
     app.run(debug=True, host='0.0.0.0', port=5001)
