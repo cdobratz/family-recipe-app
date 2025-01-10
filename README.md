@@ -1,6 +1,8 @@
 # Family Recipe App
 
-<img src="images/logo.png" width="200px" alt="Family Recipe App Logo">
+<p align="center">
+  <img src="images/logo.png" width="300px" alt="Family Recipe App Logo">
+</p>
 
 A Flask web application for preserving and sharing family recipes. This platform is dedicated to keeping old recipes alive and accessible while creating and sharing new ones.
 
