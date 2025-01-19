@@ -3,8 +3,12 @@ from urllib.parse import (
     urlparse, urlunparse, urlsplit, urlunsplit, quote, quote_plus,
     unquote, unquote_plus, urlencode, parse_qs, parse_qsl, urljoin
 )
-from flask import Flask, render_template, url_for, flash, redirect, request
+from flask import Flask, render_template, url_for, flash, redirect, request, abort
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
+from flask_talisman import Talisman
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import re
 from config import Config
 from extensions import db, migrate, bcrypt, login_manager
 
@@ -15,6 +19,50 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Initialize Talisman for security headers
+talisman = Talisman(
+    app,
+    force_https=True,
+    strict_transport_security=True,
+    session_cookie_secure=True,
+    content_security_policy={
+        'default-src': "'self'",
+        'img-src': "'self' data:",
+        'script-src': "'self'",
+        'style-src': "'self' 'unsafe-inline'",
+    }
+)
+
+# Initialize rate limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
+
+# URL path validation
+VALID_PATHS = re.compile(r'^[a-zA-Z0-9/_-]*$')
+
+@app.before_request
+def validate_request():
+    # Block requests to WordPress paths and other common exploit targets
+    blocked_paths = [
+        'wp-', '.git', 'admin', 'setup', 'install', 'config',
+        'phpmy', 'mysql', '.env', '.htaccess', 'composer'
+    ]
+    
+    path = request.path.lstrip('/')
+    
+    # Check for blocked paths
+    if any(blocked in path.lower() for blocked in blocked_paths):
+        logger.warning(f"Blocked attempt to access restricted path: {path} from IP: {request.remote_addr}")
+        abort(404)
+    
+    # Validate path format
+    if not VALID_PATHS.match(path):
+        logger.warning(f"Invalid path format attempted: {path} from IP: {request.remote_addr}")
+        abort(404)
 
 # Initialize all extensions with the app
 db.init_app(app)
@@ -53,6 +101,7 @@ def about():
     return render_template('about.html')
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     logger.debug('Login route accessed')
     if current_user.is_authenticated:
@@ -71,6 +120,7 @@ def login():
     return render_template('login.html', title='Sign In', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
@@ -221,6 +271,15 @@ def init_tags():
     db.session.commit()
     print("Tags initialized successfully!")
 
+# Error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(429)
+def ratelimit_handler(error):
+    logger.warning(f"Rate limit exceeded for IP: {request.remote_addr}")
+    return render_template('429.html'), 429
 
 if __name__ == '__main__':
     # Use configuration for debug mode
