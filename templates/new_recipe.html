@@ -131,13 +131,13 @@ $(document).ready(function() {
             <div class="ingredient-entry mb-3">
                 <div class="row align-items-end">
                     <div class="col-md-3">
-                        <label class="form-label">Quantity</label>
+                        <label class="form-label" for="ingredients-${ingredientIndex}-ingredient_quantity">Quantity</label>
                         <input class="form-control" required type="text" 
                                id="ingredients-${ingredientIndex}-ingredient_quantity"
                                name="ingredients-${ingredientIndex}-ingredient_quantity">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Unit</label>
+                        <label class="form-label" for="ingredients-${ingredientIndex}-ingredient_unit">Unit</label>
                         <select class="form-control" required
                                 id="ingredients-${ingredientIndex}-ingredient_unit"
                                 name="ingredients-${ingredientIndex}-ingredient_unit">
@@ -153,13 +153,13 @@ $(document).ready(function() {
                         </select>
                     </div>
                     <div class="col-md-5">
-                        <label class="form-label">Name</label>
+                        <label class="form-label" for="ingredients-${ingredientIndex}-ingredient_name">Name</label>
                         <input class="form-control" required type="text"
                                id="ingredients-${ingredientIndex}-ingredient_name"
                                name="ingredients-${ingredientIndex}-ingredient_name">
                     </div>
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-danger remove-ingredient">×</button>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" class="btn btn-danger remove-ingredient mb-3">×</button>
                     </div>
                 </div>
             </div>
