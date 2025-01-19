@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Initialize Talisman for security headers
+# Initialize Talisman for security headers - disable forced HTTPS in testing
 talisman = Talisman(
     app,
-    force_https=True,
+    force_https=not app.config.get('TESTING', False),
     strict_transport_security=True,
     session_cookie_secure=True,
     content_security_policy={
@@ -34,12 +34,21 @@ talisman = Talisman(
     }
 )
 
-# Initialize rate limiter
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
-)
+# Initialize rate limiter with appropriate storage
+if app.config.get('TESTING'):
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["1000 per second"],  # High limits for testing
+        storage_uri="memory://"
+    )
+else:
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://"  # In production, use redis or memcached
+    )
 
 # URL path validation
 VALID_PATHS = re.compile(r'^[a-zA-Z0-9/_-]*$')
@@ -108,15 +117,12 @@ def login():
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid email or password')
+            flash('Invalid username or password')
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
-        next_page = request.args.get('next')
-        if not next_page or urlparse(next_page).netloc != '':
-            next_page = url_for('home')
-        return redirect(next_page)
+        return redirect(url_for('home'))
     return render_template('login.html', title='Sign In', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -129,10 +135,16 @@ def register():
         user = User(username=form.username.data, email=form.email.data)
         user.set_password(form.password.data)
         db.session.add(user)
-        db.session.commit()
-        flash('Congratulations, you are now a registered user!')
-        return redirect(url_for('login'))
-    return render_template('register.html', form=form)
+        try:
+            db.session.commit()
+            flash('Congratulations, you are now a registered user!')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error during user registration: {str(e)}")
+            flash('Error during registration. Please try again.')
+            return redirect(url_for('register'))
+    return render_template('register.html', title='Register', form=form)
 
 @app.route('/logout')
 def logout():

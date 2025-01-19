@@ -3,6 +3,7 @@ import pytest
 from app import app, db
 from models import User, Recipe
 
+
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
@@ -17,40 +18,63 @@ def client():
             db.session.remove()
             db.drop_all()
 
+
 def test_landing_page(client):
     """Test that landing page loads successfully"""
-    response = client.get('/')
+    response = client.get('/', environ_base={'wsgi.url_scheme': 'https'})
     assert response.status_code == 200
-    # Check for any common text that should be on the page
     assert b'Recipe' in response.data
+
 
 def test_recipes_page(client):
     """Test that recipes page loads successfully"""
-    response = client.get('/recipes')
+    response = client.get('/recipes', environ_base={'wsgi.url_scheme': 'https'})
     assert response.status_code == 200
     assert b'Recipes' in response.data
 
+
 def test_login_page(client):
     """Test that login page loads successfully"""
-    response = client.get('/login')
+    response = client.get('/login', environ_base={'wsgi.url_scheme': 'https'})
     assert response.status_code == 200
     assert b'Login' in response.data
 
+
 def test_register_page(client):
     """Test that register page loads successfully"""
-    response = client.get('/register')
+    response = client.get('/register', environ_base={'wsgi.url_scheme': 'https'})
     assert response.status_code == 200
     assert b'Register' in response.data
 
+
 def test_user_registration(client):
     """Test user registration"""
-    response = client.post('/register', data={
-        'username': 'testuser',
-        'email': 'test@test.com',
-        'password': 'password123',
-        'password2': 'password123'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    user = User.query.filter_by(username='testuser').first()
-    assert user is not None
-    assert user.email == 'test@test.com'
+    with app.app_context():
+        response = client.post('/register', 
+            data={
+                'username': 'testuser',
+                'email': 'test@test.com',
+                'password': 'password123',
+                'password2': 'password123'
+            },
+            environ_base={'wsgi.url_scheme': 'https'},
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        
+        # Verify user was created
+        user = User.query.filter_by(username='testuser').first()
+        assert user is not None
+        assert user.email == 'test@test.com'
+        
+        # Test login with created user
+        response = client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'password123'
+            },
+            environ_base={'wsgi.url_scheme': 'https'},
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        assert b'Invalid username or password' not in response.data
