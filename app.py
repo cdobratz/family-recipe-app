@@ -298,6 +298,7 @@ def init_tags():
         diet_type = TagType(name='diet')
         db.session.add(diet_type)
 
+
     # Create meal tags if they don't exist
     meal_tags = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert']
     for tag_name in meal_tags:
@@ -306,6 +307,7 @@ def init_tags():
             tag = Tag(name=tag_name, tag_type=meal_type)
             db.session.add(tag)
     
+
     # Create diet tags if they don't exist
     diet_tags = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Low-Carb']
     for tag_name in diet_tags:
@@ -316,6 +318,7 @@ def init_tags():
     
     db.session.commit()
     print("Tags initialized successfully!")
+
 
 # Error handlers
 @app.errorhandler(404)

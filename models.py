@@ -42,6 +42,11 @@ class Recipe(db.Model):
     ingredients = db.relationship('RecipeIngredient', backref='recipe', lazy=True)
     tags = db.relationship('Tag', secondary='recipe_tags', backref=db.backref('recipes', lazy='dynamic'))
 
+    @property
+    def recipe_id(self):
+        """Alias for id to maintain compatibility with templates"""
+        return self.id
+
     def __repr__(self):
         return f'<Recipe {self.title}>'
 
