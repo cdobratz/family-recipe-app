@@ -132,20 +132,41 @@ def login():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
+    
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
         try:
+            # Check if user already exists
+            existing_user = User.query.filter(
+                (User.username == form.username.data) |
+                (User.email == form.email.data)
+            ).first()
+            
+            if existing_user:
+                if existing_user.username == form.username.data:
+                    flash('Username already exists. Please choose a different one.')
+                else:
+                    flash('Email already registered. Please use a different email.')
+                return render_template('register.html', title='Register', form=form)
+            
+            # Create new user
+            user = User(username=form.username.data, email=form.email.data)
+            user.set_password(form.password.data)
+            
+            # Add and commit in a transaction
+            db.session.add(user)
             db.session.commit()
+            
+            logger.info(f'New user registered: {user.username}')
             flash('Congratulations, you are now a registered user!')
             return redirect(url_for('login'))
+            
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error during user registration: {str(e)}")
-            flash('Error during registration. Please try again.')
-            return redirect(url_for('register'))
+            logger.error(f'Error during user registration: {str(e)}')
+            flash('An error occurred during registration. Please try again.')
+            return render_template('register.html', title='Register', form=form)
+    
     return render_template('register.html', title='Register', form=form)
 
 @app.route('/logout')
