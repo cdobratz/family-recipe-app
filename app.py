@@ -20,19 +20,20 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Initialize Talisman for security headers - disable forced HTTPS in testing
-talisman = Talisman(
-    app,
-    force_https=not app.config.get('TESTING', False),
-    strict_transport_security=True,
-    session_cookie_secure=True,
-    content_security_policy={
-        'default-src': "'self'",
-        'img-src': "'self' data:",
-        'script-src': "'self'",
-        'style-src': "'self' 'unsafe-inline'",
-    }
-)
+# Initialize Talisman for security headers - disable in testing
+if not app.config.get('TESTING', False):
+    talisman = Talisman(
+        app,
+        force_https=True,
+        strict_transport_security=True,
+        session_cookie_secure=True,
+        content_security_policy={
+            'default-src': "'self'",
+            'img-src': "'self' data:",
+            'script-src': "'self'",
+            'style-src': "'self' 'unsafe-inline'",
+        }
+    )
 
 # Initialize rate limiter with appropriate storage
 if app.config.get('TESTING'):
@@ -74,6 +75,7 @@ def validate_request():
         abort(404)
 
 # Initialize all extensions with the app
+
 db.init_app(app)
 migrate.init_app(app, db)
 bcrypt.init_app(app)
@@ -292,6 +294,7 @@ def not_found_error(error):
 def ratelimit_handler(error):
     logger.warning(f"Rate limit exceeded for IP: {request.remote_addr}")
     return render_template('429.html'), 429
+
 
 if __name__ == '__main__':
     # Use configuration for debug mode

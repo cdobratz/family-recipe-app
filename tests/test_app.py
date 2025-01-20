@@ -21,28 +21,28 @@ def client():
 
 def test_landing_page(client):
     """Test that landing page loads successfully"""
-    response = client.get('/', environ_base={'wsgi.url_scheme': 'https'})
+    response = client.get('/')
     assert response.status_code == 200
     assert b'Recipe' in response.data
 
 
 def test_recipes_page(client):
     """Test that recipes page loads successfully"""
-    response = client.get('/recipes', environ_base={'wsgi.url_scheme': 'https'})
+    response = client.get('/recipes')
     assert response.status_code == 200
     assert b'Recipes' in response.data
 
 
 def test_login_page(client):
     """Test that login page loads successfully"""
-    response = client.get('/login', environ_base={'wsgi.url_scheme': 'https'})
+    response = client.get('/login')
     assert response.status_code == 200
     assert b'Login' in response.data
 
 
 def test_register_page(client):
     """Test that register page loads successfully"""
-    response = client.get('/register', environ_base={'wsgi.url_scheme': 'https'})
+    response = client.get('/register')
     assert response.status_code == 200
     assert b'Register' in response.data
 
@@ -57,7 +57,6 @@ def test_user_registration(client):
                 'password': 'password123',
                 'password2': 'password123'
             },
-            environ_base={'wsgi.url_scheme': 'https'},
             follow_redirects=True
         )
         assert response.status_code == 200
@@ -73,7 +72,6 @@ def test_user_registration(client):
                 'username': 'testuser',
                 'password': 'password123'
             },
-            environ_base={'wsgi.url_scheme': 'https'},
             follow_redirects=True
         )
         assert response.status_code == 200
