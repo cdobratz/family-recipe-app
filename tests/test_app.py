@@ -154,47 +154,65 @@ def test_register_page(client):
 
 def test_user_registration(client, test_app, test_db):
     """Test user registration process"""
-    # Test successful registration
-    response = client.post('/register', 
-        data={
-            'username': 'newuser',
-            'email': 'new@test.com',
-            'password': 'password123',
-            'password2': 'password123'
-        },
-        follow_redirects=True
-    )
-    assert response.status_code == 200
-    
     with test_app.app_context():
+        # Test successful registration
+        response = client.post('/register', 
+            data={
+                'username': 'newuser',
+                'email': 'new@test.com',
+                'password': 'password123',
+                'password2': 'password123',
+                'submit': 'Register'
+            },
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        assert b'Congratulations, you are now a registered user!' in response.data
+        
+        # Verify user was created
         user = User.query.filter_by(username='newuser').first()
         assert user is not None
         assert user.email == 'new@test.com'
         assert user.check_password('password123')
-    
-    # Test duplicate username
-    response = client.post('/register',
-        data={
-            'username': 'newuser',
-            'email': 'another@test.com',
-            'password': 'password123',
-            'password2': 'password123'
-        },
-        follow_redirects=True
-    )
-    assert b'Username already exists' in response.data
-    
-    # Test duplicate email
-    response = client.post('/register',
-        data={
-            'username': 'anotheruser',
-            'email': 'new@test.com',
-            'password': 'password123',
-            'password2': 'password123'
-        },
-        follow_redirects=True
-    )
-    assert b'Email already registered' in response.data
+        
+        # Test duplicate username
+        response = client.post('/register',
+            data={
+                'username': 'newuser',
+                'email': 'another@test.com',
+                'password': 'password123',
+                'password2': 'password123',
+                'submit': 'Register'
+            },
+            follow_redirects=True
+        )
+        assert b'Username already exists' in response.data
+        
+        # Test duplicate email
+        response = client.post('/register',
+            data={
+                'username': 'anotheruser',
+                'email': 'new@test.com',
+                'password': 'password123',
+                'password2': 'password123',
+                'submit': 'Register'
+            },
+            follow_redirects=True
+        )
+        assert b'Email already registered' in response.data
+        
+        # Test password mismatch
+        response = client.post('/register',
+            data={
+                'username': 'testuser3',
+                'email': 'test3@test.com',
+                'password': 'password123',
+                'password2': 'password456',
+                'submit': 'Register'
+            },
+            follow_redirects=True
+        )
+        assert b'Field must be equal to password' in response.data
 
 
 def test_login_logout(client, test_user, test_app):
