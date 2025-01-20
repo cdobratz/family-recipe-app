@@ -218,30 +218,56 @@ def test_user_registration(client, test_app, test_db):
 def test_login_logout(client, test_user, test_app):
     """Test login and logout functionality"""
     with test_app.app_context():
-        # Test successful login
+        # Test invalid login with wrong password
         response = client.post('/login',
             data={
-                'username': 'testuser',
-                'password': 'password123'
+                'email': 'test@test.com',
+                'password': 'wrongpassword',
+                'remember_me': False,
+                'submit': 'Sign In'
             },
             follow_redirects=True
         )
         assert response.status_code == 200
-        assert b'Invalid username or password' not in response.data
+        assert b'Invalid email or password' in response.data
         
-        # Test invalid password
+        # Test invalid login with wrong email
         response = client.post('/login',
             data={
-                'username': 'testuser',
-                'password': 'wrongpassword'
+                'email': 'wrong@test.com',
+                'password': 'password123',
+                'remember_me': False,
+                'submit': 'Sign In'
             },
             follow_redirects=True
         )
-        assert b'Invalid username or password' in response.data
+        assert response.status_code == 200
+        assert b'Invalid email or password' in response.data
+        
+        # Test successful login
+        response = client.post('/login',
+            data={
+                'email': 'test@test.com',
+                'password': 'password123',
+                'remember_me': True,
+                'submit': 'Sign In'
+            },
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        assert b'Invalid email or password' not in response.data
+        
+        # Test accessing protected page
+        response = client.get('/home')
+        assert response.status_code == 200
         
         # Test logout
         response = client.get('/logout', follow_redirects=True)
         assert response.status_code == 200
+        
+        # Verify can't access protected page after logout
+        response = client.get('/home', follow_redirects=True)
+        assert b'Please log in to access this page' in response.data
 
 
 def test_new_recipe(client, test_user, test_app):
