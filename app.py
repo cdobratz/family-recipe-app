@@ -51,6 +51,12 @@ else:
         storage_uri="memory://"  # In production, use redis or memcached
     )
 
+# Register error handler for rate limit exceeded
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    logger.warning(f'Rate limit exceeded for IP: {request.remote_addr}')
+    return 'Rate limit exceeded. Please try again later.', 429
+
 # URL path validation
 VALID_PATHS = re.compile(r'^[a-zA-Z0-9/_-]*$')
 
@@ -315,11 +321,6 @@ def init_tags():
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
-
-@app.errorhandler(429)
-def ratelimit_handler(error):
-    logger.warning(f"Rate limit exceeded for IP: {request.remote_addr}")
-    return render_template('429.html'), 429
 
 
 if __name__ == '__main__':

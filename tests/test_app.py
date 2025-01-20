@@ -388,14 +388,33 @@ def test_invalid_routes(client):
         assert response.status_code == 404
 
 
-def test_rate_limiting(client):
+def test_rate_limiting(client, test_app):
     """Test rate limiting functionality"""
-    # Test login rate limit
-    for _ in range(6):  # Limit is 5 per minute
+    with test_app.app_context():
+        # Test login rate limit
+        for _ in range(6):  # Limit is 5 per minute
+            response = client.post('/login',
+                data={
+                    'email': 'test@test.com',
+                    'password': 'wrongpassword',
+                    'submit': 'Sign In'
+                },
+                follow_redirects=False  # Don't follow redirects to catch the 429
+            )
+            if _ < 5:  # First 5 requests should succeed (with redirect)
+                assert response.status_code == 302
+            else:  # 6th request should hit rate limit
+                assert response.status_code == 429
+                assert b'Rate limit exceeded' in response.get_data()
+        
+        # Test that rate limit is enforced across different credentials
         response = client.post('/login',
             data={
-                'username': 'testuser',
-                'password': 'wrongpassword'
-            }
+                'email': 'different@test.com',
+                'password': 'wrongpassword',
+                'submit': 'Sign In'
+            },
+            follow_redirects=False
         )
-    assert response.status_code == 429  # Too Many Requests
+        assert response.status_code == 429
+        assert b'Rate limit exceeded' in response.get_data()
