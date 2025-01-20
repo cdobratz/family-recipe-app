@@ -131,7 +131,8 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid email or password')
+            flash('Invalid email or password', 'error')
+            logger.warning(f'Failed login attempt for email: {form.email.data}')
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
         logger.info(f'User logged in: {user.email}')
@@ -143,41 +144,37 @@ def login():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
-    
     form = RegistrationForm()
     if form.validate_on_submit():
+        # Check if username already exists
+        if User.query.filter_by(username=form.username.data).first():
+            flash('Username already exists. Please choose a different one.', 'error')
+            return redirect(url_for('register'))
+        
+        # Check if email already exists
+        if User.query.filter_by(email=form.email.data).first():
+            flash('Email already registered. Please use a different email or login.', 'error')
+            return redirect(url_for('register'))
+        
+        # Create new user
+        user = User(
+            username=form.username.data,
+            email=form.email.data
+        )
+        user.set_password(form.password.data)
+        
         try:
-            # Check if user already exists
-            existing_user = User.query.filter(
-                (User.username == form.username.data) |
-                (User.email == form.email.data)
-            ).first()
-            
-            if existing_user:
-                if existing_user.username == form.username.data:
-                    flash('Username already exists. Please choose a different one.')
-                else:
-                    flash('Email already registered. Please use a different email.')
-                return render_template('register.html', title='Register', form=form)
-            
-            # Create new user
-            user = User(username=form.username.data, email=form.email.data)
-            user.set_password(form.password.data)
-            
-            # Add and commit in a transaction
             db.session.add(user)
             db.session.commit()
-            
-            logger.info(f'New user registered: {user.username}')
-            flash('Congratulations, you are now a registered user!')
+            logger.info(f'New user registered: {user.email}')
+            flash('Congratulations, you are now a registered user!', 'success')
             return redirect(url_for('login'))
-            
         except Exception as e:
-            db.session.rollback()
             logger.error(f'Error during user registration: {str(e)}')
-            flash('An error occurred during registration. Please try again.')
-            return render_template('register.html', title='Register', form=form)
-    
+            db.session.rollback()
+            flash('An error occurred during registration. Please try again.', 'error')
+            return redirect(url_for('register'))
+            
     return render_template('register.html', title='Register', form=form)
 
 @app.route('/logout')
