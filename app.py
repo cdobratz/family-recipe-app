@@ -70,7 +70,6 @@ BLOCKED_PATHS = {
 def validate_request():
     """Validate request path before processing."""
     path = request.path.lstrip('/')
-    
     # Check for blocked paths
     if any(blocked in path.lower() for blocked in BLOCKED_PATHS):
         logger.warning(f'Blocked path access attempt: {path} from IP: {request.remote_addr}')
@@ -81,6 +80,7 @@ def validate_request():
         logger.warning(f'Invalid path characters detected: {path} from IP: {request.remote_addr}')
         abort(404)
 
+
 # Initialize all extensions with the app
 
 db.init_app(app)
@@ -90,6 +90,7 @@ migrate.init_app(app, db)
 bcrypt.init_app(app)
 
 login_manager.init_app(app)
+
 
 # Import models and forms
 from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType  # noqa: E402
@@ -358,7 +359,6 @@ def init_tags():
         diet_type = TagType(name='diet')
         db.session.add(diet_type)
 
-
     # Create meal tags if they don't exist
     meal_tags = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert']
     for tag_name in meal_tags:
@@ -378,6 +378,7 @@ def init_tags():
     
     db.session.commit()
     print("Tags initialized successfully!")
+
 
 # Error handlers
 @app.errorhandler(404)
