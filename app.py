@@ -187,40 +187,66 @@ def logout():
 def new_recipe():
     form = RecipeForm()
     if form.validate_on_submit():
-        recipe = Recipe(
-            title=form.title.data,
-            description=form.description.data,
-            instructions=form.instructions.data,
-            prep_time_minutes=form.prep_time_minutes.data,
-            cook_time_minutes=form.cook_time_minutes.data or 0,
-            servings=form.servings.data,
-            user_id=current_user.id
-        )
-        db.session.add(recipe)
-        db.session.commit()
-
-        # Add ingredients
-        for ingredient_form in form.ingredients.entries:
-            # Get or create ingredient
-            ingredient = Ingredient.query.filter_by(name=ingredient_form.ingredient_name.data).first()
-            if not ingredient:
-                ingredient = Ingredient(name=ingredient_form.ingredient_name.data)
-                db.session.add(ingredient)
-                db.session.commit()
-
-            # Create recipe ingredient relationship
-            recipe_ingredient = RecipeIngredient(
-                recipe_id=recipe.id,
-                ingredient_id=ingredient.id,
-                quantity=float(ingredient_form.ingredient_quantity.data),
-                unit=ingredient_form.ingredient_unit.data
+        try:
+            logger.info(f'Creating new recipe: {form.title.data}')
+            
+            # Create recipe
+            recipe = Recipe(
+                title=form.title.data,
+                description=form.description.data,
+                instructions=form.instructions.data,
+                prep_time_minutes=form.prep_time_minutes.data,
+                cook_time_minutes=form.cook_time_minutes.data,
+                servings=form.servings.data,
+                user_id=current_user.id
             )
-            db.session.add(recipe_ingredient)
+            db.session.add(recipe)
+            db.session.flush()  # Get recipe.id without committing
+            
+            logger.debug(f'Recipe object created with ID {recipe.id}')
 
-        db.session.commit()
-        flash('Your recipe has been created!', 'success')
-        return redirect(url_for('recipe', recipe_id=recipe.id))
+            # Add ingredients
+            for ingredient_form in form.ingredients.entries:
+                if ingredient_form.ingredient_name.data:  # Only process if ingredient name is provided
+                    try:
+                        # Get or create ingredient
+                        ingredient = Ingredient.query.filter_by(name=ingredient_form.ingredient_name.data).first()
+                        if not ingredient:
+                            ingredient = Ingredient(name=ingredient_form.ingredient_name.data)
+                            db.session.add(ingredient)
+                            db.session.flush()  # Get ingredient.id without committing
+                            logger.debug(f'Created new ingredient: {ingredient.name}')
 
+                        # Create recipe ingredient relationship
+                        recipe_ingredient = RecipeIngredient(
+                            recipe_id=recipe.id,
+                            ingredient_id=ingredient.id,
+                            quantity=float(ingredient_form.ingredient_quantity.data),
+                            unit=ingredient_form.ingredient_unit.data
+                        )
+                        db.session.add(recipe_ingredient)
+                        logger.debug(f'Added ingredient {ingredient.name} to recipe {recipe.id}')
+                    except ValueError as e:
+                        logger.error(f'Error processing ingredient {ingredient_form.ingredient_name.data}: {str(e)}')
+                        db.session.rollback()
+                        flash('Error processing ingredients. Please check the quantities.', 'error')
+                        return render_template('new_recipe.html', title='New Recipe', form=form)
+
+            # Commit all changes
+            db.session.commit()
+            logger.info(f'Successfully created recipe {recipe.id}: {recipe.title}')
+            flash('Your recipe has been created!', 'success')
+            return redirect(url_for('recipe', recipe_id=recipe.id))
+
+        except Exception as e:
+            logger.error(f'Error creating recipe: {str(e)}')
+            db.session.rollback()
+            flash('An error occurred while creating your recipe. Please try again.', 'error')
+            return render_template('new_recipe.html', title='New Recipe', form=form)
+
+    if form.errors:
+        logger.warning(f'Form validation errors: {form.errors}')
+        
     return render_template('new_recipe.html', title='New Recipe', form=form)
 
 @app.route('/recipe/<int:recipe_id>')
@@ -268,17 +294,34 @@ def edit_recipe(recipe_id):
     
     return render_template('edit_recipe.html', title='Edit Recipe', form=form, recipe=recipe)
 
-@app.route('/recipe/<int:recipe_id>/delete', methods=['POST'])
+@app.route('/recipe/<int:recipe_id>/delete', methods=['GET', 'POST'])
 @login_required
 def delete_recipe(recipe_id):
     recipe = Recipe.query.get_or_404(recipe_id)
     if recipe.author != current_user:
-        flash('You can only delete your own recipes.', 'danger')
+        flash('You can only delete your own recipes.', 'error')
         return redirect(url_for('recipe', recipe_id=recipe_id))
     
-    db.session.delete(recipe)
-    db.session.commit()
-    flash('Recipe has been deleted.', 'success')
+    if request.method == 'GET':
+        return render_template('delete_recipe.html', recipe=recipe)
+    
+    try:
+        # Delete related recipe ingredients first
+        RecipeIngredient.query.filter_by(recipe_id=recipe_id).delete()
+        
+        # Delete recipe tags
+        recipe.tags = []
+        
+        # Delete the recipe
+        db.session.delete(recipe)
+        db.session.commit()
+        logger.info(f'Recipe {recipe_id} deleted by user {current_user.id}')
+        flash('Recipe has been deleted.', 'success')
+    except Exception as e:
+        logger.error(f'Error deleting recipe {recipe_id}: {str(e)}')
+        db.session.rollback()
+        flash('An error occurred while deleting the recipe.', 'error')
+    
     return redirect(url_for('recipes'))
 
 @app.cli.command("init-tags")

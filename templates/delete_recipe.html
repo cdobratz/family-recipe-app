@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ recipe.title }} - Recipe App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h1 class="card-title mb-4">Delete Recipe</h1>
+                    
+                    <div class="alert alert-danger">
+                        <p class="mb-0">
+                            Are you sure you want to delete <strong>{{ recipe.title }}</strong>?
+                            This action cannot be undone.
+                        </p>
+                    </div>
+
+                    <form method="POST">
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{{ url_for('recipe', recipe_id=recipe.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt me-1"></i>Delete Recipe
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
