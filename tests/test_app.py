@@ -316,7 +316,7 @@ def test_edit_recipe(client, test_recipe, test_user, test_app):
         )
         
         # Get fresh recipe instance
-        recipe = Recipe.query.get(test_recipe.id)
+        recipe = db.session.get(Recipe, test_recipe.id)
         
         # Test edit
         response = client.post(f'/recipe/{recipe.id}/edit',
@@ -338,24 +338,39 @@ def test_delete_recipe(client, test_recipe, test_user, test_app):
     """Test recipe deletion"""
     with test_app.app_context():
         # Login first
-        client.post('/login',
+        response = client.post('/login',
             data={
-                'username': 'testuser',
-                'password': 'password123'
-            }
+                'email': test_user.email,
+                'password': 'password123',
+                'submit': 'Sign In'
+            },
+            follow_redirects=True
         )
+        assert response.status_code == 200
         
         # Get fresh recipe instance
-        recipe = Recipe.query.get(test_recipe.id)
+        recipe = db.session.get(Recipe, test_recipe.id)
+        assert recipe is not None
+        
+        # Test GET request (confirmation page)
+        response = client.get(f'/recipe/{recipe.id}/delete')
+        assert response.status_code == 200
+        assert b'Are you sure you want to delete' in response.data
         
         # Test deletion
         response = client.post(f'/recipe/{recipe.id}/delete',
             follow_redirects=True
         )
         assert response.status_code == 200
+        assert b'Recipe has been deleted' in response.data
         
-        deleted_recipe = Recipe.query.get(recipe.id)
+        # Verify recipe is deleted
+        deleted_recipe = db.session.get(Recipe, recipe.id)
         assert deleted_recipe is None
+        
+        # Verify ingredients are deleted
+        recipe_ingredients = RecipeIngredient.query.filter_by(recipe_id=recipe.id).all()
+        assert len(recipe_ingredients) == 0
 
 
 def test_protected_routes(client):
@@ -372,49 +387,66 @@ def test_protected_routes(client):
 
 def test_invalid_routes(client):
     """Test handling of invalid routes"""
-    response = client.get('/nonexistent', follow_redirects=True)
+    # Test nonexistent route
+    response = client.get('/nonexistent')
     assert response.status_code == 404
+    assert b'Page Not Found' in response.data
     
     # Test blocked paths
     blocked_paths = [
         '/wp-admin',
         '/.git/config',
         '/admin',
-        '/phpMyAdmin'
+        '/phpMyAdmin',
+        '/wp-login.php',
+        '/administrator',
+        '/backup',
+        '/.env'
     ]
     
     for path in blocked_paths:
         response = client.get(path)
         assert response.status_code == 404
+        assert b'Page Not Found' in response.data
 
 
-def test_rate_limiting(client, test_app):
+@pytest.fixture
+def rate_limit_config(test_app):
+    """Configure rate limits for testing"""
+    original_config = test_app.config.copy()
+    
+    # Set strict rate limits for testing
+    test_app.config['RATELIMIT_DEFAULT'] = "1 per hour"  # Strict default
+    test_app.config['RATELIMIT_STORAGE_URL'] = "memory://"
+    
+    yield test_app
+    
+    # Restore original config
+    test_app.config.update(original_config)
+
+
+def test_rate_limiting(client, rate_limit_config):
     """Test rate limiting functionality"""
-    with test_app.app_context():
-        # Test login rate limit
-        for _ in range(6):  # Limit is 5 per minute
-            response = client.post('/login',
-                data={
-                    'email': 'test@test.com',
-                    'password': 'wrongpassword',
-                    'submit': 'Sign In'
-                },
-                follow_redirects=False  # Don't follow redirects to catch the 429
-            )
-            if _ < 5:  # First 5 requests should succeed (with redirect)
-                assert response.status_code == 302
-            else:  # 6th request should hit rate limit
-                assert response.status_code == 429
-                assert b'Rate limit exceeded' in response.get_data()
-        
-        # Test that rate limit is enforced across different credentials
+    with rate_limit_config.app_context():
+        # First request should succeed
         response = client.post('/login',
             data={
-                'email': 'different@test.com',
+                'email': 'test@test.com',
+                'password': 'wrongpassword',
+                'submit': 'Sign In'
+            },
+            follow_redirects=False
+        )
+        assert response.status_code == 302  # Redirect after failed login
+        
+        # Second request should be rate limited
+        response = client.post('/login',
+            data={
+                'email': 'test@test.com',
                 'password': 'wrongpassword',
                 'submit': 'Sign In'
             },
             follow_redirects=False
         )
         assert response.status_code == 429
-        assert b'Rate limit exceeded' in response.get_data()
+        assert b'Rate limit exceeded' in response.data

@@ -54,32 +54,32 @@ else:
 # Register error handler for rate limit exceeded
 @app.errorhandler(429)
 def ratelimit_handler(e):
+    """Handle rate limit exceeded errors."""
     logger.warning(f'Rate limit exceeded for IP: {request.remote_addr}')
     return 'Rate limit exceeded. Please try again later.', 429
 
 # URL path validation
 VALID_PATHS = re.compile(r'^[a-zA-Z0-9/_-]*$')
+BLOCKED_PATHS = {
+    'wp-admin', '.git', 'admin', 'phpMyAdmin', 'wp-login',
+    'administrator', 'phpmyadmin', 'mysql', 'sql', 'database',
+    'backup', 'wp-content', '.env', '.htaccess', 'config'
+}
 
 @app.before_request
 def validate_request():
-    # Block requests to WordPress paths and other common exploit targets
-    blocked_paths = [
-        'wp-', '.git', 'admin', 'setup', 'install', 'config',
-        'phpmy', 'mysql', '.env', '.htaccess', 'composer'
-    ]
-    
+    """Validate request path before processing."""
     path = request.path.lstrip('/')
     
     # Check for blocked paths
-    if any(blocked in path.lower() for blocked in blocked_paths):
-        logger.warning(f"Blocked attempt to access restricted path: {path} from IP: {request.remote_addr}")
+    if any(blocked in path.lower() for blocked in BLOCKED_PATHS):
+        logger.warning(f'Blocked path access attempt: {path} from IP: {request.remote_addr}')
         abort(404)
     
-    # Validate path format
+    # Validate path characters
     if not VALID_PATHS.match(path):
-        logger.warning(f"Invalid path format attempted: {path} from IP: {request.remote_addr}")
+        logger.warning(f'Invalid path characters detected: {path} from IP: {request.remote_addr}')
         abort(404)
-
 
 # Initialize all extensions with the app
 
@@ -251,7 +251,10 @@ def new_recipe():
 
 @app.route('/recipe/<int:recipe_id>')
 def recipe(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
+    recipe = db.session.get(Recipe, recipe_id)
+    if recipe is None:
+        flash('Recipe not found.', 'error')
+        return redirect(url_for('recipes'))
     return render_template('recipe.html', recipe=recipe)
 
 @app.route('/recipes')
@@ -274,30 +277,47 @@ def recipes():
 @app.route('/recipe/<int:recipe_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_recipe(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
+    recipe = db.session.get(Recipe, recipe_id)
+    if recipe is None:
+        flash('Recipe not found.', 'error')
+        return redirect(url_for('recipes'))
+    
     if recipe.author != current_user:
-        flash('You can only edit your own recipes.', 'danger')
+        flash('You can only edit your own recipes.', 'error')
         return redirect(url_for('recipe', recipe_id=recipe_id))
     
     form = RecipeForm(obj=recipe)
     if form.validate_on_submit():
-        recipe.title = form.title.data
-        recipe.description = form.description.data
-        recipe.instructions = form.instructions.data
-        recipe.prep_time_minutes = form.prep_time_minutes.data
-        recipe.cook_time_minutes = form.cook_time_minutes.data
-        recipe.servings = form.servings.data
-        
-        db.session.commit()
-        flash('Recipe has been updated!', 'success')
-        return redirect(url_for('recipe', recipe_id=recipe_id))
+        try:
+            recipe.title = form.title.data
+            recipe.description = form.description.data
+            recipe.instructions = form.instructions.data
+            recipe.prep_time_minutes = form.prep_time_minutes.data
+            recipe.cook_time_minutes = form.cook_time_minutes.data
+            recipe.servings = form.servings.data
+            
+            db.session.commit()
+            logger.info(f'Recipe {recipe_id} updated by user {current_user.id}')
+            flash('Recipe has been updated!', 'success')
+            return redirect(url_for('recipe', recipe_id=recipe_id))
+        except Exception as e:
+            logger.error(f'Error updating recipe {recipe_id}: {str(e)}')
+            db.session.rollback()
+            flash('An error occurred while updating the recipe.', 'error')
+    
+    if form.errors:
+        logger.warning(f'Form validation errors: {form.errors}')
     
     return render_template('edit_recipe.html', title='Edit Recipe', form=form, recipe=recipe)
 
 @app.route('/recipe/<int:recipe_id>/delete', methods=['GET', 'POST'])
 @login_required
 def delete_recipe(recipe_id):
-    recipe = Recipe.query.get_or_404(recipe_id)
+    recipe = db.session.get(Recipe, recipe_id)
+    if recipe is None:
+        flash('Recipe not found.', 'error')
+        return redirect(url_for('recipes'))
+    
     if recipe.author != current_user:
         flash('You can only delete your own recipes.', 'error')
         return redirect(url_for('recipe', recipe_id=recipe_id))
@@ -359,12 +379,19 @@ def init_tags():
     db.session.commit()
     print("Tags initialized successfully!")
 
-
 # Error handlers
 @app.errorhandler(404)
 def not_found_error(error):
+    """Handle 404 errors."""
+    logger.warning(f'404 error for path: {request.path} from IP: {request.remote_addr}')
     return render_template('404.html'), 404
 
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors."""
+    logger.error(f'500 error for path: {request.path} from IP: {request.remote_addr}')
+    db.session.rollback()
+    return render_template('500.html'), 500
 
 if __name__ == '__main__':
     # Use configuration for debug mode
