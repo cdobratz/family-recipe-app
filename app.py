@@ -70,6 +70,7 @@ BLOCKED_PATHS = {
 def validate_request():
     """Validate request path before processing."""
     path = request.path.lstrip('/')
+
     # Check for blocked paths
     if any(blocked in path.lower() for blocked in BLOCKED_PATHS):
         logger.warning(f'Blocked path access attempt: {path} from IP: {request.remote_addr}')
@@ -82,7 +83,6 @@ def validate_request():
 
 
 # Initialize all extensions with the app
-
 db.init_app(app)
 
 migrate.init_app(app, db)
@@ -366,7 +366,6 @@ def init_tags():
         if not tag:
             tag = Tag(name=tag_name, tag_type=meal_type)
             db.session.add(tag)
-    
 
     # Create diet tags if they don't exist
     diet_tags = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 'Keto', 'Low-Carb']
@@ -375,7 +374,7 @@ def init_tags():
         if not tag:
             tag = Tag(name=tag_name, tag_type=diet_type)
             db.session.add(tag)
-    
+
     db.session.commit()
     print("Tags initialized successfully!")
 
@@ -393,6 +392,7 @@ def internal_error(error):
     logger.error(f'500 error for path: {request.path} from IP: {request.remote_addr}')
     db.session.rollback()
     return render_template('500.html'), 500
+
 
 if __name__ == '__main__':
     # Use configuration for debug mode
