@@ -33,21 +33,30 @@ def client(test_app, test_db):
     return test_app.test_client()
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def test_user(test_app, test_db):
     """Create a test user"""
     with test_app.app_context():
-        user = User(username='testuser', email='test@test.com')
+        user = User(
+            username='testuser',
+            email='test@test.com'
+        )
         user.set_password('password123')
-        db.session.add(user)
-        db.session.commit()
+        test_db.session.add(user)
+        test_db.session.commit()
+        
+        # Get a fresh instance from the session
+        user = User.query.filter_by(username='testuser').first()
         return user
 
 
-@pytest.fixture
+@pytest.fixture(scope='function')
 def test_recipe(test_app, test_db, test_user):
     """Create a test recipe"""
     with test_app.app_context():
+        # Get a fresh user instance
+        user = User.query.filter_by(username='testuser').first()
+        
         recipe = Recipe(
             title='Test Recipe',
             description='Test Description',
@@ -55,14 +64,14 @@ def test_recipe(test_app, test_db, test_user):
             prep_time_minutes=30,
             cook_time_minutes=60,
             servings=4,
-            user_id=test_user.id
+            user_id=user.id
         )
-        db.session.add(recipe)
+        test_db.session.add(recipe)
         
         # Add ingredients
         ingredient = Ingredient(name='Test Ingredient')
-        db.session.add(ingredient)
-        db.session.commit()
+        test_db.session.add(ingredient)
+        test_db.session.commit()
         
         recipe_ingredient = RecipeIngredient(
             recipe_id=recipe.id,
@@ -70,50 +79,75 @@ def test_recipe(test_app, test_db, test_user):
             quantity=1.0,
             unit='cup'
         )
-        db.session.add(recipe_ingredient)
-        db.session.commit()
+        test_db.session.add(recipe_ingredient)
+        test_db.session.commit()
         
+        # Get a fresh instance from the session
+        recipe = Recipe.query.filter_by(title='Test Recipe').first()
         return recipe
 
 
 def test_landing_page(client):
     """Test that landing page loads successfully"""
-    response = client.get('/')
+    response = client.get('/', follow_redirects=True)
     assert response.status_code == 200
     assert b'Recipe' in response.data
 
 
-def test_recipes_page(client, test_recipe):
+def test_recipes_page(client, test_recipe, test_app):
     """Test that recipes page loads successfully"""
-    response = client.get('/recipes')
-    assert response.status_code == 200
-    assert b'Recipes' in response.data
-    assert b'Test Recipe' in response.data
+    with test_app.app_context():
+        # First test without login - should redirect to login page
+        response = client.get('/recipes', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Please log in to access this page' in response.data
+        
+        # Login and test again
+        client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'password123'
+            }
+        )
+        
+        response = client.get('/recipes', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Recipes' in response.data
+        assert b'Test Recipe' in response.data
 
 
-def test_recipes_search(client, test_recipe):
+def test_recipes_search(client, test_recipe, test_app):
     """Test recipe search functionality"""
-    # Test successful search
-    response = client.get('/recipes?q=Test')
-    assert response.status_code == 200
-    assert b'Test Recipe' in response.data
-    
-    # Test empty search
-    response = client.get('/recipes?q=NonExistent')
-    assert response.status_code == 200
-    assert b'Test Recipe' not in response.data
+    with test_app.app_context():
+        # Login first
+        client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'password123'
+            }
+        )
+        
+        # Test successful search
+        response = client.get('/recipes?q=Test', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Test Recipe' in response.data
+        
+        # Test empty search
+        response = client.get('/recipes?q=NonExistent', follow_redirects=True)
+        assert response.status_code == 200
+        assert b'Test Recipe' not in response.data
 
 
 def test_login_page(client):
     """Test that login page loads successfully"""
-    response = client.get('/login')
+    response = client.get('/login', follow_redirects=True)
     assert response.status_code == 200
     assert b'Login' in response.data
 
 
 def test_register_page(client):
     """Test that register page loads successfully"""
-    response = client.get('/register')
+    response = client.get('/register', follow_redirects=True)
     assert response.status_code == 200
     assert b'Register' in response.data
 
@@ -163,113 +197,121 @@ def test_user_registration(client, test_app, test_db):
     assert b'Email already registered' in response.data
 
 
-def test_login_logout(client, test_user):
+def test_login_logout(client, test_user, test_app):
     """Test login and logout functionality"""
-    # Test successful login
-    response = client.post('/login',
-        data={
-            'username': 'testuser',
-            'password': 'password123'
-        },
-        follow_redirects=True
-    )
-    assert response.status_code == 200
-    assert b'Invalid username or password' not in response.data
-    
-    # Test invalid password
-    response = client.post('/login',
-        data={
-            'username': 'testuser',
-            'password': 'wrongpassword'
-        },
-        follow_redirects=True
-    )
-    assert b'Invalid username or password' in response.data
-    
-    # Test logout
-    response = client.get('/logout', follow_redirects=True)
-    assert response.status_code == 200
+    with test_app.app_context():
+        # Test successful login
+        response = client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'password123'
+            },
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        assert b'Invalid username or password' not in response.data
+        
+        # Test invalid password
+        response = client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'wrongpassword'
+            },
+            follow_redirects=True
+        )
+        assert b'Invalid username or password' in response.data
+        
+        # Test logout
+        response = client.get('/logout', follow_redirects=True)
+        assert response.status_code == 200
 
 
 def test_new_recipe(client, test_user, test_app):
     """Test recipe creation"""
-    # Login first
-    client.post('/login',
-        data={
-            'username': 'testuser',
-            'password': 'password123'
-        }
-    )
-    
-    # Test recipe creation
-    response = client.post('/new_recipe',
-        data={
-            'title': 'New Test Recipe',
-            'description': 'New Description',
-            'instructions': 'New Instructions',
-            'prep_time_minutes': 15,
-            'cook_time_minutes': 30,
-            'servings': 2,
-            'ingredients-0-ingredient_name': 'Flour',
-            'ingredients-0-ingredient_quantity': '2',
-            'ingredients-0-ingredient_unit': 'cups'
-        },
-        follow_redirects=True
-    )
-    assert response.status_code == 200
-    
     with test_app.app_context():
+        # Login first
+        client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'password123'
+            }
+        )
+        
+        # Test recipe creation
+        response = client.post('/new_recipe',
+            data={
+                'title': 'New Test Recipe',
+                'description': 'New Description',
+                'instructions': 'New Instructions',
+                'prep_time_minutes': 15,
+                'cook_time_minutes': 30,
+                'servings': 2,
+                'ingredients-0-ingredient_name': 'Flour',
+                'ingredients-0-ingredient_quantity': '2',
+                'ingredients-0-ingredient_unit': 'cups'
+            },
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        
         recipe = Recipe.query.filter_by(title='New Test Recipe').first()
         assert recipe is not None
         assert recipe.description == 'New Description'
         assert recipe.user_id == test_user.id
 
 
-def test_edit_recipe(client, test_recipe, test_user):
+def test_edit_recipe(client, test_recipe, test_user, test_app):
     """Test recipe editing"""
-    # Login first
-    client.post('/login',
-        data={
-            'username': 'testuser',
-            'password': 'password123'
-        }
-    )
-    
-    # Test edit
-    response = client.post(f'/recipe/{test_recipe.id}/edit',
-        data={
-            'title': 'Updated Recipe',
-            'description': 'Updated Description',
-            'instructions': 'Updated Instructions',
-            'prep_time_minutes': 45,
-            'cook_time_minutes': 90,
-            'servings': 6
-        },
-        follow_redirects=True
-    )
-    assert response.status_code == 200
-    assert b'Updated Recipe' in response.data
+    with test_app.app_context():
+        # Login first
+        client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'password123'
+            }
+        )
+        
+        # Get fresh recipe instance
+        recipe = Recipe.query.get(test_recipe.id)
+        
+        # Test edit
+        response = client.post(f'/recipe/{recipe.id}/edit',
+            data={
+                'title': 'Updated Recipe',
+                'description': 'Updated Description',
+                'instructions': 'Updated Instructions',
+                'prep_time_minutes': 45,
+                'cook_time_minutes': 90,
+                'servings': 6
+            },
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        assert b'Updated Recipe' in response.data
 
 
 def test_delete_recipe(client, test_recipe, test_user, test_app):
     """Test recipe deletion"""
-    # Login first
-    client.post('/login',
-        data={
-            'username': 'testuser',
-            'password': 'password123'
-        }
-    )
-    
-    # Test deletion
-    response = client.post(f'/recipe/{test_recipe.id}/delete',
-        follow_redirects=True
-    )
-    assert response.status_code == 200
-    
     with test_app.app_context():
+        # Login first
+        client.post('/login',
+            data={
+                'username': 'testuser',
+                'password': 'password123'
+            }
+        )
+        
+        # Get fresh recipe instance
         recipe = Recipe.query.get(test_recipe.id)
-        assert recipe is None
+        
+        # Test deletion
+        response = client.post(f'/recipe/{recipe.id}/delete',
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        
+        deleted_recipe = Recipe.query.get(recipe.id)
+        assert deleted_recipe is None
 
 
 def test_protected_routes(client):
