@@ -40,7 +40,7 @@ if app.config.get('TESTING'):
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["1000 per second"],  # High limits for testing
+        default_limits=["100 per second"], # For testing purposes
         storage_uri="memory://"
     )
 else:
@@ -122,10 +122,10 @@ def home():
 def about():
     return render_template('about.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def login():
-    logger.debug('Login route accessed')
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = LoginForm()
@@ -133,12 +133,11 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid email or password', 'error')
-            logger.warning(f'Failed login attempt for email: {form.email.data}')
             return redirect(url_for('login'))
         login_user(user, remember=form.remember_me.data)
-        logger.info(f'User logged in: {user.email}')
         return redirect(url_for('home'))
     return render_template('login.html', title='Sign In', form=form)
+
 
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("3 per hour")
@@ -178,10 +177,12 @@ def register():
             
     return render_template('register.html', title='Register', form=form)
 
+
 @app.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for('landing'))
+
 
 @app.route('/new_recipe', methods=['GET', 'POST'])
 @login_required
@@ -250,7 +251,9 @@ def new_recipe():
         
     return render_template('new_recipe.html', title='New Recipe', form=form)
 
+
 @app.route('/recipe/<int:recipe_id>')
+@login_required
 def recipe(recipe_id):
     recipe = db.session.get(Recipe, recipe_id)
     if recipe is None:
@@ -258,7 +261,9 @@ def recipe(recipe_id):
         return redirect(url_for('recipes'))
     return render_template('recipe.html', recipe=recipe)
 
+
 @app.route('/recipes')
+@login_required
 def recipes():
     search_query = request.args.get('q', '')
     if search_query:
@@ -274,6 +279,7 @@ def recipes():
         recipes = Recipe.query.order_by(Recipe.created_at.desc()).limit(5).all()
     
     return render_template('recipes.html', recipes=recipes, search_query=search_query)
+
 
 @app.route('/recipe/<int:recipe_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -311,6 +317,7 @@ def edit_recipe(recipe_id):
     
     return render_template('edit_recipe.html', title='Edit Recipe', form=form, recipe=recipe)
 
+
 @app.route('/recipe/<int:recipe_id>/delete', methods=['GET', 'POST'])
 @login_required
 def delete_recipe(recipe_id):
@@ -344,6 +351,7 @@ def delete_recipe(recipe_id):
         flash('An error occurred while deleting the recipe.', 'error')
     
     return redirect(url_for('recipes'))
+
 
 @app.cli.command("init-tags")
 def init_tags():
@@ -383,13 +391,18 @@ def init_tags():
 @app.errorhandler(404)
 def not_found_error(error):
     """Handle 404 errors."""
-    logger.warning(f'404 error for path: {request.path} from IP: {request.remote_addr}')
     return render_template('404.html'), 404
+
+
+@app.errorhandler(429)
+def not_found_error(error):
+    """Handle 429 errors."""
+    return render_template('429.html'), 429
+
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    logger.error(f'500 error for path: {request.path} from IP: {request.remote_addr}')
     db.session.rollback()
     return render_template('500.html'), 500
 
