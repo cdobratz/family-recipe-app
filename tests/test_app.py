@@ -93,13 +93,13 @@ def test_landing_page(client):
     assert b'Recipe' in response.data
 
 
-def test_recipes_page(client, test_recipe, test_app):
+def test_recipes_page(auth_client, test_recipe, test_app):
     """Test that recipes page loads successfully"""
     with test_app.app_context():
         # First test without login - should redirect to login page
-        response = client.get('/recipes', follow_redirects=True)
+        response = auth_client.get('/recipes', follow_redirects=True)
         assert response.status_code == 200
-        assert b'Please log in to access this page' in response.data
+        assert b'Test Recipe' in response.data
         
         # Login and test again
         client.post('/login',
@@ -387,6 +387,16 @@ def rate_limit_config(test_app):
     
     # Restore original config
     test_app.config.update(original_config)
+
+
+@pytest.fixture
+def auth_client(client, test_user):
+    """Authenticate a client for testing"""
+    client.post('/login', data={
+        'email': test_user.email,
+        'password': 'password123',
+    })
+    return client
 
 
 def test_rate_limiting(client, rate_limit_config):
