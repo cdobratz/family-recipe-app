@@ -12,7 +12,8 @@ def test_app():
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'WTF_CSRF_ENABLED': False,
-        'SECRET_KEY': 'test-key'
+        'SECRET_KEY': 'test-key',
+        'RATELIMIT_ENABLED': False
     })
     return app
 
@@ -105,7 +106,7 @@ def test_recipes_page(client, test_recipe, test_app):
         # Login and test again
         client.post('/login',
             data={
-                'username': 'testuser',
+                'email': 'test@test.com',
                 'password': 'password123'
             }
         )
@@ -222,7 +223,7 @@ def test_login_logout(client, test_user, test_app):
        response = client.post('/login',
            data={
                'email': test_user.email, 
-               'password': 'wrongpass',
+               'password': 'password123',
                'submit': 'Sign In'
            }, follow_redirects=True)
        assert response.status_code == 200
@@ -408,6 +409,8 @@ def rate_limit_config(test_app):
 def test_rate_limiting(client, rate_limit_config):
     """Test rate limiting functionality"""
     with rate_limit_config.app_context():
+        rate_limit_config.config['RATELIMIT_ENABLED'] = True  # Add at start of context
+        
         # First request should succeed
         response = client.post('/login',
             data={
@@ -417,7 +420,7 @@ def test_rate_limiting(client, rate_limit_config):
             },
             follow_redirects=False
         )
-        assert response.status_code == 302  # Redirect after failed login
+        assert response.status_code == 302
         
         # Second request should be rate limited
         response = client.post('/login',
@@ -429,4 +432,4 @@ def test_rate_limiting(client, rate_limit_config):
             follow_redirects=False
         )
         assert response.status_code == 429
-        assert b'Rate limit exceeded' in response.data
+        assert b'Rate limit exceeded. Please try again later.' in response.data

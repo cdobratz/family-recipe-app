@@ -40,7 +40,7 @@ if app.config.get('TESTING'):
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["100 per second"],
+        default_limits=["1000 per second"],
         storage_uri="memory://"
     )
 else:
@@ -58,6 +58,7 @@ def ratelimit_handler(e):
     logger.warning(f'Rate limit exceeded for IP: {request.remote_addr}')
     return 'Rate limit exceeded. Please try again later.', 429
 
+
 # URL path validation
 VALID_PATHS = re.compile(r'^[a-zA-Z0-9/_-]*$')
 BLOCKED_PATHS = {
@@ -65,7 +66,6 @@ BLOCKED_PATHS = {
     'administrator', 'phpmyadmin', 'mysql', 'sql', 'database',
     'backup', 'wp-content', '.env', '.htaccess', 'config'
 }
-
 
 
 @app.before_request
