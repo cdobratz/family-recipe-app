@@ -224,9 +224,7 @@ def test_login_logout(client, test_user, test_app):
                'email': test_user.email, 
                'password': 'wrongpass',
                'submit': 'Sign In'
-           },
-           follow_redirects=True
-       )
+           }, follow_redirects=True)
        assert response.status_code == 200
        assert b'Invalid email or password' in response.data
 

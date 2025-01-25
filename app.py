@@ -40,7 +40,7 @@ if app.config.get('TESTING'):
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["100 per second"], 
+        default_limits=["100 per second"],
         storage_uri="memory://"
     )
 else:
@@ -48,7 +48,7 @@ else:
         app=app,
         key_func=get_remote_address,
         default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"  # In production, use redis or memcached
+        storage_uri="memory://"
     )
 
 # Register error handler for rate limit exceeded
@@ -65,6 +65,7 @@ BLOCKED_PATHS = {
     'administrator', 'phpmyadmin', 'mysql', 'sql', 'database',
     'backup', 'wp-content', '.env', '.htaccess', 'config'
 }
+
 
 
 @app.before_request
@@ -86,9 +87,12 @@ def validate_request():
 # Initialize all extensions with the app
 db.init_app(app)
 
+
 migrate.init_app(app, db)
 
+
 bcrypt.init_app(app)
+
 
 login_manager.init_app(app)
 
