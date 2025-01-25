@@ -138,10 +138,10 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
-            next_page = request.args.get('next')
-            return redirect(next_page if next_page else url_for('home'))
+            flash('You have been logged in!', 'success')
+            return redirect(url_for('home'))
         flash('Invalid email or password', 'error')
-    return render_template('login.html', title='Sign In', form=form)
+    return render_template('login.html', form=form)
 
 
 @app.route('/register', methods=['GET', 'POST'])
