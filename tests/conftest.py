@@ -10,7 +10,9 @@ def test_app():
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'WTF_CSRF_ENABLED': False,
-        'SECRET_KEY': 'test-key'
+        'SECRET_KEY': 'test-key',
+        'RATELIMIT_ENABLED': False,
+        'RATELIMIT_STORAGE_URL': 'memory://',
     })
 
     # Create application context

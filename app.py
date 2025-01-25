@@ -40,7 +40,7 @@ if app.config.get('TESTING'):
     limiter = Limiter(
         app=app,
         key_func=get_remote_address,
-        default_limits=["100 per second"], # For testing purposes
+        default_limits=["100 per second"], 
         storage_uri="memory://"
     )
 else:
@@ -65,6 +65,7 @@ BLOCKED_PATHS = {
     'administrator', 'phpmyadmin', 'mysql', 'sql', 'database',
     'backup', 'wp-content', '.env', '.htaccess', 'config'
 }
+
 
 @app.before_request
 def validate_request():
@@ -131,11 +132,11 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
-        if user is None or not user.check_password(form.password.data):
-            flash('Invalid email or password', 'error')
-            return redirect(url_for('login'))
-        login_user(user, remember=form.remember_me.data)
-        return redirect(url_for('home'))
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            next_page = request.args.get('next')
+            return redirect(next_page if next_page else url_for('home'))
+        flash('Invalid email or password', 'error')
     return render_template('login.html', title='Sign In', form=form)
 
 
@@ -391,20 +392,28 @@ def init_tags():
 @app.errorhandler(404)
 def not_found_error(error):
     """Handle 404 errors."""
+    logger.warning(f'404 error for path: {request.path} from IP: {request.remote_addr}')
     return render_template('404.html'), 404
 
-
 @app.errorhandler(429)
-def not_found_error(error):
-    """Handle 429 errors."""
+def ratelimit_handler(error):
+    """Handle rate limit exceeded errors."""
+    logger.warning(f'Rate limit exceeded for IP: {request.remote_addr}')
     return render_template('429.html'), 429
-
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
+    logger.error(f'500 error for path: {request.path} from IP: {request.remote_addr}')
     db.session.rollback()
     return render_template('500.html'), 500
+
+# Add before_request handler
+@app.before_request
+def validate_request():
+    if not request.blueprint and not current_user.is_authenticated:
+        if request.endpoint not in ['login', 'register', 'landing', 'static']:
+            return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
