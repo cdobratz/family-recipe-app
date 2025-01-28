@@ -82,6 +82,11 @@ def validate_request():
     if not VALID_PATHS.match(path):
         logger.warning(f'Invalid path characters detected: {path} from IP: {request.remote_addr}')
         abort(404)
+    
+    # Redirect unauthorized users to login page for protected routes
+    if not current_user.is_authenticated:
+        if request.endpoint not in ['login', 'register', 'landing', 'static']:
+            return redirect(url_for('login'))
 
 
 # Initialize all extensions with the app
@@ -411,13 +416,6 @@ def internal_error(error):
     logger.error(f'500 error for path: {request.path} from IP: {request.remote_addr}')
     db.session.rollback()
     return render_template('500.html'), 500
-
-# Add before_request handler
-@app.before_request
-def validate_request():
-    if not request.blueprint and not current_user.is_authenticated:
-        if request.endpoint not in ['login', 'register', 'landing', 'static']:
-            return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
