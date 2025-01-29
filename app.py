@@ -12,13 +12,13 @@ import re
 from config import Config
 from extensions import db, migrate, bcrypt, login_manager
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Initialize Talisman for security headers - disable in testing
 if not app.config.get('TESTING', False):
@@ -36,20 +36,12 @@ if not app.config.get('TESTING', False):
     )
 
 # Initialize rate limiter with appropriate storage
-if app.config.get('TESTING'):
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=None,
-        storage_uri="memory://"
-    )
-else:
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://"
-    )
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # Register error handler for rate limit exceeded
 @app.errorhandler(429)
@@ -145,7 +137,10 @@ def login():
             login_user(user, remember=form.remember_me.data)
             flash('You have been logged in!', 'success')
             return redirect(url_for('home'))
+        
         flash('Invalid email or password', 'error')
+        logger.info(f'Login attempt failed for email: {form.email.data}')
+    
     return render_template('login.html', form=form)
 
 
@@ -154,6 +149,7 @@ def login():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('home'))
+    
     form = RegistrationForm()
     if form.validate_on_submit():
         # Check if username already exists
@@ -166,24 +162,22 @@ def register():
             flash('Email already registered. Please use a different email or login.', 'error')
             return redirect(url_for('register'))
         
-        # Create new user
-        user = User(
-            username=form.username.data,
-            email=form.email.data
-        )
-        user.set_password(form.password.data)
-        
         try:
+            user = User(
+                username=form.username.data,
+                email=form.email.data
+            )
+            user.set_password(form.password.data)
             db.session.add(user)
             db.session.commit()
             logger.info(f'New user registered: {user.email}')
             flash('Congratulations, you are now a registered user!', 'success')
             return redirect(url_for('login'))
+        
         except Exception as e:
             logger.error(f'Error during user registration: {str(e)}')
             db.session.rollback()
             flash('An error occurred during registration. Please try again.', 'error')
-            return redirect(url_for('register'))
             
     return render_template('register.html', title='Register', form=form)
 
@@ -200,9 +194,7 @@ def new_recipe():
     form = RecipeForm()
     if form.validate_on_submit():
         try:
-            logger.info(f'Creating new recipe: {form.title.data}')
-            
-            # Create recipe
+            # Create the recipe
             recipe = Recipe(
                 title=form.title.data,
                 description=form.description.data,
@@ -213,27 +205,27 @@ def new_recipe():
                 user_id=current_user.id
             )
             db.session.add(recipe)
-            db.session.flush()  # Get recipe.id without committing
-            
-            logger.debug(f'Recipe object created with ID {recipe.id}')
+            db.session.commit()
+            logger.info(f'New recipe created by: {current_user.id}: {recipe.title}')
+            flash('Recipe created!', 'success')
 
-            # Add ingredients
+            # Process ingredients
             for ingredient_form in form.ingredients.entries:
-                if ingredient_form.ingredient_name.data:  # Only process if ingredient name is provided
+                if ingredient_form.ingredient_name.data.strip():  # Only process non-empty ingredients
                     try:
                         # Get or create ingredient
                         ingredient = Ingredient.query.filter_by(name=ingredient_form.ingredient_name.data).first()
                         if not ingredient:
                             ingredient = Ingredient(name=ingredient_form.ingredient_name.data)
                             db.session.add(ingredient)
-                            db.session.flush()  # Get ingredient.id without committing
+                            db.session.flush()  # Flush to get the ingredient ID
                             logger.debug(f'Created new ingredient: {ingredient.name}')
 
                         # Create recipe ingredient relationship
                         recipe_ingredient = RecipeIngredient(
                             recipe_id=recipe.id,
                             ingredient_id=ingredient.id,
-                            quantity=float(ingredient_form.ingredient_quantity.data),
+                            quantity=float(ingredient_form.ingredient_quantity.data) if ingredient_form.ingredient_quantity.data else 0,
                             unit=ingredient_form.ingredient_unit.data
                         )
                         db.session.add(recipe_ingredient)
@@ -243,6 +235,12 @@ def new_recipe():
                         db.session.rollback()
                         flash('Error processing ingredients. Please check the quantities.', 'error')
                         return render_template('new_recipe.html', title='New Recipe', form=form)
+
+            # Process tags
+            if form.meal_tags.data:
+                recipe.tags.extend(Tag.query.filter(Tag.id.in_(form.meal_tags.data)).all())
+            if form.diet_tags.data:
+                recipe.tags.extend(Tag.query.filter(Tag.id.in_(form.diet_tags.data)).all())
 
             # Commit all changes
             db.session.commit()
@@ -256,9 +254,11 @@ def new_recipe():
             flash('An error occurred while creating your recipe. Please try again.', 'error')
             return render_template('new_recipe.html', title='New Recipe', form=form)
 
+    # Handle form validation errors
     if form.errors:
         logger.warning(f'Form validation errors: {form.errors}')
-        
+        flash('Please correct the errors below.', 'error')
+
     return render_template('new_recipe.html', title='New Recipe', form=form)
 
 
