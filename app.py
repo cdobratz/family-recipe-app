@@ -1,14 +1,9 @@
 import logging
-from urllib.parse import (
-    urlparse, urlunparse, urlsplit, urlunsplit, quote, quote_plus,
-    unquote, unquote_plus, urlencode, parse_qs, parse_qsl, urljoin
-)
 from flask import Flask, render_template, url_for, flash, redirect, request, abort
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import re
 from config import Config
 from extensions import db, migrate, bcrypt, login_manager
 
@@ -50,35 +45,6 @@ def ratelimit_handler(e):
     logger.warning(f'Rate limit exceeded for IP: {request.remote_addr}')
     return 'Rate limit exceeded. Please try again later.', 429
 
-
-# URL path validation
-VALID_PATHS = re.compile(r'^[a-zA-Z0-9/_-]*$')
-BLOCKED_PATHS = {
-    'wp-admin', '.git', 'admin', 'phpMyAdmin', 'wp-login',
-    'administrator', 'phpmyadmin', 'mysql', 'sql', 'database',
-    'backup', 'wp-content', '.env', '.htaccess', 'config'
-}
-
-
-@app.before_request
-def validate_request():
-    """Validate request path before processing."""
-    path = request.path.lstrip('/')
-
-    # Check for blocked paths
-    if any(blocked in path.lower() for blocked in BLOCKED_PATHS):
-        logger.warning(f'Blocked path access attempt: {path} from IP: {request.remote_addr}')
-        abort(404)
-    
-    # Validate path characters
-    if not VALID_PATHS.match(path):
-        logger.warning(f'Invalid path characters detected: {path} from IP: {request.remote_addr}')
-        abort(404)
-    
-    # Redirect unauthorized users to login page for protected routes
-    if not current_user.is_authenticated:
-        if request.endpoint not in ['login', 'register', 'landing', 'static']:
-            return redirect(url_for('login'))
 
 
 # Initialize all extensions with the app
