@@ -15,20 +15,6 @@ app.config.from_object(Config)
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Initialize Talisman for security headers - disable in testing
-if not app.config.get('TESTING', False):
-    talisman = Talisman(
-        app,
-        force_https=True,
-        strict_transport_security=True,
-        session_cookie_secure=True,
-        content_security_policy={
-            'default-src': "'self'",
-            'img-src': "'self' data:",
-            'script-src': "'self'",
-            'style-src': "'self' 'unsafe-inline'",
-        }
-    )
 
 # Initialize rate limiter with appropriate storage
 limiter = Limiter(
@@ -45,8 +31,6 @@ def ratelimit_handler(e):
     logger.warning(f'Rate limit exceeded for IP: {request.remote_addr}')
     return 'Rate limit exceeded. Please try again later.', 429
 
-
-
 # Initialize all extensions with the app
 db.init_app(app)
 
@@ -58,7 +42,6 @@ bcrypt.init_app(app)
 
 
 login_manager.init_app(app)
-
 
 # Import models and forms
 from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType  # noqa: E402
