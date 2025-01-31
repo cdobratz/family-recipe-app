@@ -156,7 +156,7 @@ def new_recipe():
             db.session.add(recipe)
             db.session.commit()
             logger.info(f'New recipe created by: {current_user.id}: {recipe.title}')
-            flash('Recipe created!', 'success')
+            flash('Recipe created successfully!', 'success')
 
             # Process ingredients
             for ingredient_form in form.ingredients.entries:
@@ -194,7 +194,6 @@ def new_recipe():
             # Commit all changes
             db.session.commit()
             logger.info(f'Successfully created recipe {recipe.id}: {recipe.title}')
-            flash('Your recipe has been created!', 'success')
             return redirect(url_for('recipe', recipe_id=recipe.id))
 
         except Exception as e:
