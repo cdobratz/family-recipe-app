@@ -10,6 +10,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+
 # Define a simple test model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,4 +36,5 @@ with app.app_context():
         print(f"Error occurred: {str(e)}")
     finally:
         db.session.close()
+
 
