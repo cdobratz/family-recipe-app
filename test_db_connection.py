@@ -37,5 +37,3 @@ with app.app_context():
         print(f"Error occurred: {str(e)}")
     finally:
         db.session.close()
-
-
