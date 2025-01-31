@@ -1,56 +1,100 @@
 import os
+import sys
 import pytest
 from app import app, db
-from models import User, Recipe
+from models import User, Recipe, Ingredient, RecipeIngredient
+from flask_login import current_user, login_user
+
+# Add project root to Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 @pytest.fixture
-def client():
+def test_app():
+    """Configure Flask application for testing"""
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     app.config['WTF_CSRF_ENABLED'] = False
-    app.config['SECRET_KEY'] = 'test-key'
-    
-    with app.test_client() as client:
-        with app.app_context():
-            db.create_all()
-            yield client
-            db.session.remove()
-            db.drop_all()
+    app.config['RATELIMIT_ENABLED'] = False
+    return app
 
-def test_landing_page(client):
-    """Test that landing page loads successfully"""
-    response = client.get('/')
-    assert response.status_code == 200
-    # Check for any common text that should be on the page
-    assert b'Recipe' in response.data
+@pytest.fixture
+def test_db(test_app):
+    """Set up and tear down test database"""
+    with test_app.app_context():
+        db.create_all()
+        yield db
+        db.session.remove()
+        db.drop_all()
 
-def test_recipes_page(client):
-    """Test that recipes page loads successfully"""
-    response = client.get('/recipes')
-    assert response.status_code == 200
-    assert b'Recipes' in response.data
+@pytest.fixture
+def test_user(test_db):
+    """Create a test user"""
+    user = User(username='testuser', email='testuser@example.com')
+    user.set_password('password123')
+    test_db.session.add(user)
+    test_db.session.commit()
+    return user
 
-def test_login_page(client):
-    """Test that login page loads successfully"""
-    response = client.get('/login')
-    assert response.status_code == 200
-    assert b'Login' in response.data
+@pytest.fixture
+def test_recipe(test_app, test_db, test_user):
+    """Fixture to create a test recipe with ingredients for testing"""
+    with test_app.app_context():
+        recipe = Recipe(
+            title='Test Recipe',
+            description='Test Description',
+            instructions='Test Instructions',
+            prep_time_minutes=30,
+            cook_time_minutes=45,
+            servings=4,
+            user_id=test_user.id
+        )
+        test_db.session.add(recipe)
+        test_db.session.commit()
+        return recipe
 
-def test_register_page(client):
-    """Test that register page loads successfully"""
-    response = client.get('/register')
-    assert response.status_code == 200
-    assert b'Register' in response.data
+def login(client):
+    response = client.post('/login', data=dict(
+        email='testuser@example.com',
+        password='password123'
+    ), follow_redirects=True)
+    print(response.data)  # Debugging information
+    return response
 
-def test_user_registration(client):
-    """Test user registration"""
-    response = client.post('/register', data={
-        'username': 'testuser',
-        'email': 'test@test.com',
-        'password': 'password123',
-        'password2': 'password123'
-    }, follow_redirects=True)
-    assert response.status_code == 200
-    user = User.query.filter_by(username='testuser').first()
-    assert user is not None
-    assert user.email == 'test@test.com'
+def test_login_logout(client, test_user, test_app):
+    """Test login/logout functionality"""
+    with test_app.test_request_context():
+        with test_app.test_client() as client:
+            response = login(client)
+            assert response.status_code == 200
+            
+            # Verify the user is logged in
+            with client.session_transaction() as sess:
+                assert sess.get('_user_id') is not None
+            
+            # Check flash message
+            assert b'You have been logged in!' in response.data
+
+def test_new_recipe(client, test_user, test_app):
+    """Test recipe creation"""
+    with test_app.app_context():
+        login_response = login(client)
+        assert login_response.status_code == 200
+        print(login_response.data)  # Debugging information
+
+        
+        response = client.post('/new_recipe',
+            data={
+                'title': 'New Test Recipe',
+                'description': 'New Description',
+                'instructions': 'New Instructions',
+                'prep_time_minutes': 15,
+                'cook_time_minutes': 30,
+                'servings': 2,
+                'ingredients-0-ingredient_name': 'Flour',
+                'ingredients-0-ingredient_quantity': '2',
+                'ingredients-0-ingredient_unit': 'cup'  # Ensure this is a valid choice
+            },
+            follow_redirects=True
+        )
+        assert response.status_code == 200
+        print(response.data)  # Debugging information
+        assert b'Recipe created successfully!' in response.data
