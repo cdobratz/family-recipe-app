@@ -31,6 +31,7 @@ def ratelimit_handler(e):
     logger.warning(f'Rate limit exceeded for IP: {request.remote_addr}')
     return 'Rate limit exceeded. Please try again later.', 429
 
+
 # Initialize all extensions with the app
 db.init_app(app)
 
@@ -42,6 +43,7 @@ bcrypt.init_app(app)
 
 
 login_manager.init_app(app)
+
 
 # Import models and forms
 from models import User, Recipe, RecipeIngredient, Ingredient, Tag, TagType  # noqa: E402
