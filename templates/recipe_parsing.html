@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Recipe Parser - Family Recipe App{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0">Recipe Parser</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Paste your recipe text below, and our AI will organize it into a structured format.
+                        Works best with plain text recipes that include ingredients and instructions.
+                    </p>
+                    
+                    <form id="parsingForm">
+                        <div class="mb-3">
+                            <label for="recipe_text" class="form-label">Recipe Text</label>
+                            <textarea class="form-control" id="recipe_text" name="recipe_text" rows="15" 
+                                placeholder="Paste your recipe here..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="parseRecipeBtn">
+                                <i class="fas fa-magic me-2"></i>Parse Recipe
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer">
+                    <div class="small text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        The AI will attempt to identify the title, ingredients, instructions, and other recipe details.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div id="loadingIndicator" class="d-none text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Parsing recipe text...</p>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-danger d-none"></div>
+            
+            <div id="parsedResultContainer" class="d-none">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Parsed Recipe</h3>
+                        <button class="btn btn-sm btn-light" id="saveRecipeBtn">
+                            <i class="fas fa-save me-1"></i> Save to My Recipes
+                        </button>
+                    </div>
+                    <div class="card-body" id="parsedResult">
+                        <!-- Parsed recipe will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM elements
+    const parsingForm = document.getElementById('parsingForm');
+    const recipeTextInput = document.getElementById('recipe_text');
+    const parseRecipeBtn = document.getElementById('parseRecipeBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorMessage = document.getElementById('errorMessage');
+    const parsedResultContainer = document.getElementById('parsedResultContainer');
+    const parsedResult = document.getElementById('parsedResult');
+    const saveRecipeBtn = document.getElementById('saveRecipeBtn');
+    
+    // Current parsed recipe data
+    let currentParsedRecipe = null;
+    
+    // Handle form submission
+    parsingForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const recipeText = recipeTextInput.value.trim();
+        if (recipeText.length < 10) {
+            errorMessage.textContent = 'Please enter a valid recipe with at least 10 characters.';
+            errorMessage.classList.remove('d-none');
+            return;
+        }
+        
+        // Hide any previous error messages and parsed results, show loading
+        errorMessage.classList.add('d-none');
+        parsedResultContainer.classList.add('d-none');
+        loadingIndicator.classList.remove('d-none');
+        parseRecipeBtn.disabled = true;
+        
+        // Make API request
+        fetch('/api/recipes/parse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ recipe_text: recipeText })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to parse recipe');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            loadingIndicator.classList.add('d-none');
+            parseRecipeBtn.disabled = false;
+            
+            if (data.parsed_recipe) {
+                currentParsedRecipe = data.parsed_recipe;
+                displayParsedRecipe(data.parsed_recipe);
+                parsedResultContainer.classList.remove('d-none');
+            } else {
+                throw new Error('No recipe data returned from AI');
+            }
+        })
+        .catch(error => {
+            loadingIndicator.classList.add('d-none');
+            parseRecipeBtn.disabled = false;
+            errorMessage.textContent = error.message;
+            errorMessage.classList.remove('d-none');
+        });
+    });
+    
+    // Display parsed recipe
+    function displayParsedRecipe(recipe) {
+        // Format recipe details
+        const ingredients = recipe.ingredients.map(ing => 
+            `<li>${ing.quantity ? ing.quantity : ''} ${ing.unit || ''} ${ing.name}</li>`
+        ).join('');
+        
+        const instructions = recipe.instructions.map(step => 
+            `<li>${step}</li>`
+        ).join('');
+        
+        parsedResult.innerHTML = `
+            <h4 class="mb-3">${recipe.title}</h4>
+            
+            ${recipe.description ? `<p class="mb-3">${recipe.description}</p>` : ''}
+            
+            <div class="row mb-3">
+                ${recipe.preparation_time_minutes ? `
+                <div class="col-sm-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-mortar-pestle me-2 text-muted"></i>
+                        <div>
+                            <div class="fw-bold">Prep Time</div>
+                            <div>${recipe.preparation_time_minutes} min</div>
+                        </div>
+                    </div>
+                </div>` : ''}
+                
+                ${recipe.cooking_time_minutes ? `
+                <div class="col-sm-4">
+                    <div class="d-flex align-items-center">
+                        <i class="far fa-clock me-2 text-muted"></i>
+                        <div>
+                            <div class="fw-bold">Cook Time</div>
+                            <div>${recipe.cooking_time_minutes} min</div>
+                        </div>
+                    </div>
+                </div>` : ''}
+                
+                ${recipe.servings ? `
+                <div class="col-sm-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-utensils me-2 text-muted"></i>
+                        <div>
+                            <div class="fw-bold">Servings</div>
+                            <div>${recipe.servings}</div>
+                        </div>
+                    </div>
+                </div>` : ''}
+            </div>
+            
+            <h5 class="mt-4 mb-2">Ingredients</h5>
+            <ul>${ingredients}</ul>
+            
+            <h5 class="mt-4 mb-2">Instructions</h5>
+            <ol>${instructions}</ol>
+        `;
+    }
+    
+    // Handle save recipe button
+    saveRecipeBtn.addEventListener('click', function() {
+        if (!currentParsedRecipe) {
+            errorMessage.textContent = 'No recipe data available to save.';
+            errorMessage.classList.remove('d-none');
+            return;
+        }
+        
+        // Disable button and show loading state
+        saveRecipeBtn.disabled = true;
+        saveRecipeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+        
+        // Make API request to save recipe
+        fetch('/api/recipes/create-from-parsed', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ parsed_recipe: currentParsedRecipe })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to save recipe');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Display success message and redirect to the new recipe
+                const successAlert = document.createElement('div');
+                successAlert.className = 'alert alert-success mt-3';
+                successAlert.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    Recipe saved successfully! Redirecting to your new recipe...
+                `;
+                parsedResult.insertAdjacentElement('afterbegin', successAlert);
+                
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = `/recipe/${data.recipe_id}`;
+                }, 2000);
+            } else {
+                throw new Error(data.message || 'Failed to save recipe');
+            }
+        })
+        .catch(error => {
+            saveRecipeBtn.disabled = false;
+            saveRecipeBtn.innerHTML = '<i class="fas fa-save me-1"></i> Save to My Recipes';
+            errorMessage.textContent = error.message;
+            errorMessage.classList.remove('d-none');
+        });
+    });
+});
+</script>
+{% endblock %}
+
