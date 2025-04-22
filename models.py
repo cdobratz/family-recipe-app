@@ -105,3 +105,34 @@ recipe_tags = db.Table(
     db.Column('recipe_id', db.Integer, db.ForeignKey('recipes.id'), primary_key=True),
     db.Column('tag_id', db.Integer, db.ForeignKey('tags.id'), primary_key=True)
 )
+
+
+class RecipeSuggestionCache(db.Model):
+    """Cache model for storing AI-generated recipe suggestions."""
+    __tablename__ = 'recipe_suggestion_cache'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    ingredients_hash = db.Column(db.String(64), nullable=False)  # Hash of ingredients list
+    dietary_preferences_hash = db.Column(db.String(64), nullable=True)  # Hash of dietary preferences
+    suggestions = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Index for faster lookups
+    __table_args__ = (db.Index('idx_user_ingredients', 'user_id', 'ingredients_hash'),)
+
+    user = db.relationship('User', backref=db.backref('suggestion_cache', lazy=True))
+
+    def __repr__(self):
+        return f'<RecipeSuggestionCache id={self.id} user_id={self.user_id}>'
+
+
+class RecipeParsingCache(db.Model):
+    """Cache model for storing AI-parsed recipe texts."""
+    __tablename__ = 'recipe_parsing_cache'
+    id = db.Column(db.Integer, primary_key=True)
+    recipe_text_hash = db.Column(db.String(64), nullable=False, unique=True)
+    parsed_recipe = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<RecipeParsingCache id={self.id}>'
