@@ -313,7 +313,179 @@ def delete_recipe(recipe_id):
     return redirect(url_for('recipes'))
 
 
-@app.cli.command("init-tags")
+@app.route('/recipe-suggestions')
+@login_required
+def recipe_suggestions():
+    """Render the recipe suggestions page."""
+    return render_template('recipe_suggestions.html')
+
+
+@app.route('/recipe-parsing')
+@login_required
+def recipe_parsing():
+    """Render the recipe parsing page."""
+    return render_template('recipe_parsing.html')
+
+
+# AI Service Routes
+@app.route('/api/recipes/suggest', methods=['POST'])
+@login_required
+@limiter.limit("5 per minute, 20 per hour, 50 per day")
+def api_recipe_suggestions():
+    """
+    API endpoint for getting recipe suggestions based on ingredients.
+    
+    Expected JSON body:
+    {
+        "ingredients": ["ingredient1", "ingredient2", ...],
+        "dietary_preferences": ["vegetarian", "gluten-free", ...], (optional)
+        "excluded_ingredients": ["ingredient1", "ingredient2", ...] (optional)
+    }
+    """
+    try:
+        # Validate request data
+        if not request.is_json:
+            return jsonify({"error": "Request must be JSON"}), 400
+            
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'ingredients' not in data:
+            return jsonify({"error": "Missing required field: ingredients"}), 400
+            
+        ingredients = data.get('ingredients', [])
+        dietary_preferences = data.get('dietary_preferences')
+        excluded_ingredients = data.get('excluded_ingredients')
+        
+        # Validate ingredients is a list and not empty
+        if not isinstance(ingredients, list) or not ingredients:
+            return jsonify({"error": "ingredients must be a non-empty list"}), 400
+            
+        # Validate dietary_preferences is a list if provided
+        if dietary_preferences is not None and not isinstance(dietary_preferences, list):
+            return jsonify({"error": "dietary_preferences must be a list"}), 400
+            
+        # Validate excluded_ingredients is a list if provided
+        if excluded_ingredients is not None and not isinstance(excluded_ingredients, list):
+            return jsonify({"error": "excluded_ingredients must be a list"}), 400
+        
+        # Check AI service health
+        from ai_client import check_ai_service_health
+        if not check_ai_service_health():
+            return jsonify({"error": "AI service is currently unavailable"}), 503
+        
+        # Get suggestions from AI service
+        from ai_client import get_recipe_suggestions
+        response, status_code = get_recipe_suggestions(
+            user_id=current_user.id,
+            ingredients=ingredients,
+            dietary_preferences=dietary_preferences,
+            excluded_ingredients=excluded_ingredients
+        )
+        
+        return jsonify(response), status_code
+        
+    except Exception as e:
+        logger.exception(f"Error in recipe suggestions endpoint: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+
+@app.route('/api/recipes/parse', methods=['POST'])
+@login_required
+@limiter.limit("3 per minute, 10 per hour, 20 per day")
+def api_recipe_parsing():
+    """
+    API endpoint for parsing raw recipe text.
+    
+    Expected JSON body:
+    {
+        "recipe_text": "Full recipe text to parse"
+    }
+    """
+    try:
+        # Validate request data
+        if not request.is_json:
+            return jsonify({"error": "Request must be JSON"}), 400
+            
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'recipe_text' not in data:
+            return jsonify({"error": "Missing required field: recipe_text"}), 400
+            
+        recipe_text = data.get('recipe_text', '')
+        
+        # Validate recipe_text is a string and not empty
+        if not isinstance(recipe_text, str) or len(recipe_text.strip()) < 10:
+            return jsonify({"error": "recipe_text must be a string with at least 10 characters"}), 400
+        
+        # Check AI service health
+        from ai_client import check_ai_service_health
+        if not check_ai_service_health():
+            return jsonify({"error": "AI service is currently unavailable"}), 503
+        
+        # Parse recipe text
+        from ai_client import parse_recipe_text
+        response, status_code = parse_recipe_text(recipe_text)
+        
+        return jsonify(response), status_code
+        
+    except Exception as e:
+        logger.exception(f"Error in recipe parsing endpoint: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+
+@app.route('/api/recipes/create-from-parsed', methods=['POST'])
+@login_required
+@limiter.limit("3 per minute, 10 per hour, 20 per day")
+def api_create_recipe_from_parsed():
+    """
+    API endpoint for creating a new recipe from parsed recipe data.
+    
+    Expected JSON body:
+    {
+        "parsed_recipe": { ... parsed recipe data ... }
+    }
+    """
+    try:
+        # Validate request data
+        if not request.is_json:
+            return jsonify({"error": "Request must be JSON"}), 400
+            
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'parsed_recipe' not in data:
+            return jsonify({"error": "Missing required field: parsed_recipe"}), 400
+            
+        parsed_recipe = data.get('parsed_recipe', {})
+        
+        # Validate parsed_recipe is a dictionary
+        if not isinstance(parsed_recipe, dict):
+            return jsonify({"error": "parsed_recipe must be an object"}), 400
+        
+        # Create recipe from parsed data
+        from ai_client import create_recipe_from_parsed_data
+        recipe, message = create_recipe_from_parsed_data(current_user.id, {"parsed_recipe": parsed_recipe})
+        
+        if recipe:
+            return jsonify({
+                "success": True,
+                "message": message,
+                "recipe_id": recipe.id
+            }), 201
+        else:
+            return jsonify({
+                "success": False,
+                "message": message
+            }), 400
+        
+    except Exception as e:
+        logger.exception(f"Error creating recipe from parsed data: {str(e)}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+
+# Error handlers
 def init_tags():
     """Initialize tag types and tags."""
     # Create tag types if they don't exist
