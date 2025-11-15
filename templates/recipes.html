@@ -36,11 +36,18 @@
                     <h5 class="card-title">{{ recipe.title }}</h5>
                     <p class="card-text text-muted">
                         <small>
-                            <i class="fas fa-clock me-1"></i>{{ recipe.prep_time_minutes + recipe.cook_time_minutes }} mins
+                            <i class="fas fa-clock me-1"></i><strong>Total:</strong> {{ recipe.prep_time_minutes + recipe.cook_time_minutes }} mins
                             <span class="mx-2">|</span>
                             <i class="fas fa-user me-1"></i>{{ recipe.servings }} servings
                         </small>
                     </p>
+                    {% if recipe.tags %}
+                    <div class="mb-2">
+                        {% for tag in recipe.tags %}
+                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                     <p class="card-text">{{ recipe.description[:100] }}{% if recipe.description|length > 100 %}...{% endif %}</p>
                     <p class="card-text">
                         <small class="text-muted">
@@ -76,6 +83,39 @@
         </a>
         {% endif %}
     </div>
+    {% endif %}
+
+    {% if pagination and pagination.pages > 1 %}
+    <nav aria-label="Recipe pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('recipes', page=pagination.prev_num, q=search_query) if pagination.has_prev else '#' }}">
+                    <i class="fas fa-chevron-left me-1"></i>Previous
+                </a>
+            </li>
+
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('recipes', page=page_num, q=search_query) }}">{{ page_num }}</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('recipes', page=pagination.next_num, q=search_query) if pagination.has_next else '#' }}">
+                    Next<i class="fas fa-chevron-right ms-1"></i>
+                </a>
+            </li>
+        </ul>
+        <p class="text-center text-muted">
+            <small>Showing {{ pagination.total }} recipe{{ 's' if pagination.total != 1 else '' }} (Page {{ pagination.page }} of {{ pagination.pages }})</small>
+        </p>
+    </nav>
     {% endif %}
 </div>
 {% endblock %}

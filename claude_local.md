@@ -1,531 +1,658 @@
-# Adding AI Agent Integration to Family Recipe App
+# Family Recipe App - Improvement Suggestions
 
-This guide provides step-by-step instructions for integrating the AI-powered microservice from the [RecipeApp_AI repository](https://github.com/cdobratz/RecipeApp_AI) into the Family Recipe App.
+## Overview
+This document outlines comprehensive improvements for the Family Recipe App based on code analysis and UX best practices.
 
-## What is the AI Agent?
+---
 
-The AI Agent is a FastAPI-based microservice that enhances the recipe app with intelligent features:
-- **Recipe Suggestions**: Generate recipe ideas based on available ingredients and dietary preferences
-- **Recipe Parsing**: Convert unstructured recipe text into structured JSON format with ingredients, instructions, and timing
+## Critical Issues to Fix First
 
-The service runs independently from the main Flask application and communicates via HTTP API calls.
+### 1. Bug in Recipe Display
+**Priority: CRITICAL**
 
-## Architecture Overview
+- **Issue**: Recipe template references `recipe.recipe_id` but the model uses `recipe.id`
+- **Location**:
+  - `templates/recipe.html:78` - Edit button
+  - `templates/recipe.html:102` - Delete form
+  - `templates/recipes.html:54` - View recipe link
+- **Impact**: Causes errors when viewing/editing/deleting recipes
+- **Fix**: Replace all instances of `recipe.recipe_id` with `recipe.id`
 
+### 2. Missing Ingredient Editing
+**Priority: HIGH**
+
+- **Issue**: Edit recipe function only updates metadata, not ingredients
+- **Location**: `app.py:155-176` - `edit_recipe()` function
+- **Impact**: Users cannot modify ingredients after creating a recipe
+- **Fix**: Add ingredient management to the edit form
+
+### 3. Missing Image Upload
+**Priority: HIGH**
+
+- **Issue**: Model has `image_filename` field but no upload functionality
+- **Location**: `models.py:35` - Recipe model
+- **Impact**: Recipes cannot have visual appeal
+- **Fix**: Implement image upload with file handling
+
+---
+
+## Major Feature Improvements
+
+### A. Enhanced Recipe Upload Experience
+
+#### 1. Image Upload with Preview
+- Add drag-and-drop image upload
+- Live image preview before saving
+- Client-side image compression/resizing
+- Support for multiple images (gallery view)
+- Automatic thumbnail generation
+- Image optimization for web (WebP format)
+
+**Technical Requirements:**
+- Flask-Uploads or similar library
+- Client-side: Dropzone.js or similar
+- Image processing: Pillow library
+- Storage: Save to `/static/uploads/recipes/`
+
+#### 2. Ingredient Autocomplete
+- Auto-suggest existing ingredients while typing
+- Prevents duplicate ingredients with different spellings
+- Shows ingredient history and usage frequency
+- Fast search through ingredient database
+
+**Technical Requirements:**
+- JavaScript autocomplete library (e.g., Awesomplete)
+- AJAX endpoint: `/api/ingredients/search`
+- Fuzzy matching for better UX
+
+#### 3. Rich Text Editor for Instructions
+- Numbered steps instead of plain textarea
+- Add/remove/reorder steps with drag-and-drop
+- Optional text formatting (bold, italic, lists)
+- Step-by-step visual separation
+- Optional images per step
+
+**Technical Requirements:**
+- Consider: Quill.js, TinyMCE, or simple custom solution
+- Store as structured JSON or formatted text
+- Update template to render formatted steps
+
+#### 4. Recipe Import from URL
+- Parse recipes from popular cooking websites
+- Auto-fill all fields from imported data
+- Support for: AllRecipes, Food Network, NYT Cooking, etc.
+- Fallback to manual entry if parsing fails
+
+**Technical Requirements:**
+- Recipe scraping library (recipe-scrapers Python package)
+- New route: `/recipe/import`
+- Error handling for unsupported sites
+
+#### 5. Bulk Ingredient Entry
+- Paste entire ingredient list and auto-parse
+- Smart parsing: "2 cups flour" → quantity: 2, unit: cups, name: flour
+- Multi-line support
+- Manual correction before saving
+
+**Technical Requirements:**
+- NLP parsing or regex patterns
+- Common ingredient format detection
+- Validation and confirmation UI
+
+---
+
+### B. Better UI/UX
+
+#### 1. Modern Card-Based Layout
+- Larger recipe cards with prominent images
+- Grid/list view toggle
+- Hover effects with quick actions (edit, favorite, share)
+- Better recipe thumbnails in search results
+- Skeleton loading states
+
+**Design Updates:**
+- Increase card image size
+- Add hover overlay with actions
+- Consistent card heights
+- Better typography hierarchy
+
+#### 2. Advanced Search & Filtering
+**Current Issue:** Only basic text search exists
+
+**Improvements:**
+- Filter by tags (meal type, diet type)
+- Filter by cook time ranges (< 30 min, 30-60 min, > 60 min)
+- Filter by servings
+- Filter by specific ingredients (has/doesn't have)
+- Sort options: newest, oldest, A-Z, cook time, popular
+- Save favorite filters
+
+**Technical Requirements:**
+- Update `/recipes` route with query parameters
+- SQLAlchemy query building
+- URL state management for sharing filtered views
+
+#### 3. Recipe Collections
+- Favorites/bookmark system
+- Custom collections ("Grandma's Recipes", "Quick Weeknight Meals")
+- Share collections with family members
+- Collection privacy settings
+
+**Database Changes:**
+- New table: `collections`
+- Junction table: `collection_recipes`
+- User-to-collection relationship
+
+#### 4. Interactive Recipe View
+- **Ingredient Scaler**: Adjust quantities based on servings
+  - Slider or input to change serving size
+  - Automatic recalculation of all ingredients
+
+- **Checklist Mode**:
+  - Check off ingredients as you gather them
+  - Check off steps as you complete them
+  - Progress persists during session
+
+- **Timer Integration**:
+  - Built-in timers for cooking steps
+  - Browser notifications when timer completes
+
+- **Print-Friendly View**:
+  - Clean print stylesheet
+  - Single-page print layout
+  - Option to exclude images for paper saving
+
+**Technical Requirements:**
+- JavaScript for interactive features
+- LocalStorage for checklist state
+- CSS print media queries
+
+#### 5. Better Mobile Experience
+- Sticky ingredient list while scrolling instructions
+- Larger touch targets (min 44px)
+- Mobile-optimized forms
+- Voice input for hands-free recipe viewing
+- Keep screen awake option during cooking
+
+**Technical Requirements:**
+- CSS position: sticky
+- Media queries for mobile
+- Web Speech API for voice features
+- Screen Wake Lock API
+
+---
+
+### C. Family-Focused Features
+
+#### 1. Recipe Comments & Ratings
+- Family members can leave comments/notes
+- "I made this!" counter with photos
+- Recipe variations and substitution suggestions
+- Photo submissions from family members
+
+**Database Changes:**
+- New table: `recipe_comments`
+- New table: `recipe_photos`
+- Rating system (optional)
+
+#### 2. Family Tree Integration
+- Tag recipes by originating family member
+- "Original Recipe by Grandma Jean" attribution
+- Recipe provenance and history
+- Filter recipes by family member
+
+**UI Changes:**
+- Recipe origin badge
+- Family member selector on create/edit
+- Dedicated "Recipe Origins" page
+
+#### 3. Meal Planning
+- Weekly meal planner calendar
+- Drag-and-drop recipes to days
+- Auto-generate shopping list from planned meals
+- Nutrition information (optional)
+
+**Technical Requirements:**
+- New models: `meal_plan`, `meal_plan_recipes`
+- Calendar UI component
+- Shopping list aggregation logic
+
+#### 4. Recipe Sharing
+- Generate shareable public links (without login)
+- Export recipe as PDF with nice formatting
+- Email recipe directly to family members
+- QR code generation for easy mobile access
+- Social media preview cards
+
+**Technical Requirements:**
+- PDF generation: WeasyPrint or ReportLab
+- Email: Flask-Mail
+- QR codes: qrcode library
+- Public share tokens in database
+
+---
+
+### D. Technical Enhancements
+
+#### 1. Performance Optimizations
+
+**Current Issues:**
+- Only showing 5 recipes max on `/recipes` page
+- No pagination
+- All recipes loaded at once on home page
+
+**Improvements:**
+- Add pagination (20-30 recipes per page)
+- Lazy loading for images (Intersection Observer)
+- Database indexing on commonly searched fields
+- Query optimization with eager loading
+- Caching for popular recipes (Flask-Caching)
+- CDN for static assets
+
+**Implementation:**
+```python
+# Add to models
+Recipe.query.order_by(Recipe.created_at.desc()).paginate(page=1, per_page=20)
 ```
-Family Recipe App (Flask) <--HTTP--> AI Agent Service (FastAPI) <--API--> OpenRouter (AI Models)
-       Port 5001                            Port 8000
+
+#### 2. Security Enhancements
+
+**Current Status:**
+- Basic CSRF protection via Flask-WTF
+- Password hashing via Bcrypt ✓
+
+**Improvements:**
+- Rate limiting on uploads (Flask-Limiter)
+- Image size and type validation
+- File upload security (safe filenames, type checking)
+- XSS protection in recipe content (escape user input)
+- SQL injection prevention (already handled by SQLAlchemy ✓)
+- HTTPS enforcement in production
+- Content Security Policy headers
+
+#### 3. Data Quality
+
+**Improvements:**
+- Unit conversion system (metric ↔ imperial toggle)
+- Ingredient normalization
+  - Store canonical ingredient names
+  - Handle variations: "flour" vs "all-purpose flour"
+- Recipe validation before saving
+  - Require at least 1 ingredient
+  - Require instructions
+- Duplicate recipe detection
+  - Warn if similar title exists
+- Data cleanup utilities
+
+#### 4. Backup & Export
+
+**Features:**
+- Export all recipes as JSON/CSV
+- Export individual recipe as JSON/PDF
+- Import from other recipe apps (standard formats)
+- Automatic scheduled database backups
+- Backup verification
+- Restore from backup functionality
+
+**Technical Requirements:**
+- Flask CLI commands for backup/restore
+- JSON/CSV serialization
+- Cron job or scheduled task for automatic backups
+
+---
+
+## Quick Wins (Easy to Implement)
+
+These can be done quickly for immediate improvement:
+
+1. ✅ **Fix `recipe.recipe_id` → `recipe.id` bug** (5 minutes)
+2. ✅ **Add tag display on recipe cards** (10 minutes)
+3. ✅ **Remove 5-recipe limit** - show all or add pagination (15 minutes)
+4. ✅ **Add recipe count to home page** (10 minutes)
+5. ✅ **Add "Back to Recipes" breadcrumb** (10 minutes)
+6. ✅ **Show total time prominently** (5 minutes)
+7. ✅ **Better empty states with CTAs** (15 minutes)
+8. ✅ **Add loading states** (20 minutes)
+9. ✅ **Fix ingredient edit functionality** (30 minutes)
+10. ✅ **Mobile responsive improvements** (30 minutes)
+
+---
+
+## Implementation Priority Roadmap
+
+### Phase 1: Critical Fixes (Week 1)
+1. Fix recipe.id bug
+2. Add ingredient editing capability
+3. Basic image upload
+4. Remove recipe limit / add pagination
+5. Fix any broken links or features
+
+### Phase 2: Core UX Improvements (Weeks 2-3)
+1. Ingredient autocomplete
+2. Enhanced search and filtering
+3. Tag display and filtering
+4. Better mobile responsiveness
+5. Print-friendly recipe view
+
+### Phase 3: Image & Media (Week 4)
+1. Advanced image upload with preview
+2. Image optimization and thumbnails
+3. Multiple images per recipe
+4. Photo gallery view
+
+### Phase 4: Family Features (Weeks 5-6)
+1. Recipe comments system
+2. Recipe collections/favorites
+3. Family member attribution
+4. Recipe sharing capabilities
+
+### Phase 5: Advanced Features (Weeks 7-8)
+1. Meal planning
+2. Shopping list generation
+3. Recipe import from URL
+4. Rich text instructions editor
+
+### Phase 6: Polish & Optimization (Weeks 9-10)
+1. Performance optimizations
+2. Additional security measures
+3. Backup/export functionality
+4. Analytics and insights
+
+---
+
+## Technology Stack Additions
+
+### Recommended Python Packages
+```txt
+# Image handling
+Pillow==10.1.0
+Flask-Uploads==0.2.1
+
+# Email
+Flask-Mail==0.9.1
+
+# Caching
+Flask-Caching==2.1.0
+
+# Rate limiting
+Flask-Limiter==3.5.0
+
+# PDF generation
+WeasyPrint==60.1
+
+# Recipe scraping
+recipe-scrapers==14.52.0
+
+# QR codes
+qrcode[pil]==7.4.2
 ```
 
-## Prerequisites
+### Frontend Libraries
+- **Autocomplete**: Awesomplete or Select2
+- **Image Upload**: Dropzone.js
+- **Calendar**: FullCalendar
+- **Rich Text**: Quill.js
+- **Icons**: FontAwesome (already included ✓)
+- **Drag & Drop**: SortableJS
 
-Before starting, ensure you have:
+---
 
-1. **Python 3.11+** installed
-2. **Git** installed
-3. **OpenRouter API Key** - Sign up at [OpenRouter](https://openrouter.ai/) to get your API key
-4. **Docker & Docker Compose** (optional, for containerized deployment)
+## Database Schema Changes
 
-## Step 1: Clone the AI Agent Repository
+### New Tables Needed
 
-Navigate to your project directory and clone the AI agent repository alongside your main app:
+```sql
+-- Collections
+CREATE TABLE collections (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_public BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
 
-```bash
-# If you're in the family-recipe-app directory, go up one level
-cd ..
+-- Collection Recipes
+CREATE TABLE collection_recipes (
+    collection_id INTEGER,
+    recipe_id INTEGER,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (collection_id, recipe_id),
+    FOREIGN KEY (collection_id) REFERENCES collections(id),
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+);
 
-# Clone the AI agent repository
-git clone https://github.com/cdobratz/RecipeApp_AI.git
+-- Recipe Comments
+CREATE TABLE recipe_comments (
+    id INTEGER PRIMARY KEY,
+    recipe_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
 
-# Your directory structure should now look like:
-# ├── family-recipe-app/
-# └── RecipeApp_AI/
+-- Recipe Photos
+CREATE TABLE recipe_photos (
+    id INTEGER PRIMARY KEY,
+    recipe_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    is_primary BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Meal Plans
+CREATE TABLE meal_plans (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    meal_type VARCHAR(20), -- breakfast, lunch, dinner, snack
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Meal Plan Recipes
+CREATE TABLE meal_plan_recipes (
+    meal_plan_id INTEGER,
+    recipe_id INTEGER,
+    PRIMARY KEY (meal_plan_id, recipe_id),
+    FOREIGN KEY (meal_plan_id) REFERENCES meal_plans(id),
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+);
+
+-- Recipe Shares (for public links)
+CREATE TABLE recipe_shares (
+    id INTEGER PRIMARY KEY,
+    recipe_id INTEGER NOT NULL,
+    share_token VARCHAR(64) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    view_count INTEGER DEFAULT 0,
+    FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+);
 ```
 
-## Step 2: Set Up the AI Agent Environment
+### Indexes to Add
 
-### Create Virtual Environment
-
-```bash
-cd RecipeApp_AI
-
-# Create a virtual environment
-python -m venv venv
-
-# Activate the virtual environment
-# On Linux/Mac:
-source venv/bin/activate
-# On Windows:
-# venv\Scripts\activate
+```sql
+CREATE INDEX idx_recipes_user_id ON recipes(user_id);
+CREATE INDEX idx_recipes_created_at ON recipes(created_at DESC);
+CREATE INDEX idx_recipes_title ON recipes(title);
+CREATE INDEX idx_ingredients_name ON ingredients(name);
+CREATE INDEX idx_recipe_comments_recipe_id ON recipe_comments(recipe_id);
+CREATE INDEX idx_recipe_photos_recipe_id ON recipe_photos(recipe_id);
 ```
 
-### Install Dependencies
+---
 
-```bash
-pip install -r requirements.txt
-```
+## Design System Improvements
 
-The key dependencies include:
-- FastAPI & Uvicorn (web framework and server)
-- OpenAI client library (for OpenRouter API)
-- Pydantic (data validation)
-- python-dotenv (environment configuration)
+### Color Palette Enhancement
+```css
+:root {
+    /* Primary Colors */
+    --primary: #4a90e2;
+    --primary-dark: #357abd;
+    --primary-light: #6fa8e8;
 
-## Step 3: Configure Environment Variables
+    /* Secondary Colors */
+    --secondary: #f39c12;
+    --accent: #e74c3c;
+    --success: #27ae60;
 
-Create a `.env` file in the `RecipeApp_AI` directory:
+    /* Neutrals */
+    --gray-50: #f8f9fa;
+    --gray-100: #f0f2f5;
+    --gray-200: #e9ecef;
+    --gray-600: #6c757d;
+    --gray-900: #2c3e50;
 
-```bash
-# Create .env file
-touch .env
-```
-
-Add the following configuration to `.env`:
-
-```env
-# Required: OpenRouter Configuration
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
-OPENROUTER_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
-OPENROUTER_SITE_URL=http://localhost:5001
-OPENROUTER_APP_NAME=FamilyRecipeApp
-
-# Required: API Security
-API_KEY=your_secure_api_key_here
-
-# Optional: Server Configuration
-HOST=0.0.0.0
-PORT=8000
-ALLOWED_ORIGINS=http://localhost:5001,http://127.0.0.1:5001
-
-# Optional: Logging
-LOG_LEVEL=INFO
-```
-
-**Important Configuration Notes:**
-
-1. **OPENROUTER_API_KEY**: Get this from your OpenRouter account dashboard
-2. **OPENROUTER_MODEL**: Recommended models:
-   - `anthropic/claude-3.5-sonnet` (high quality, balanced cost)
-   - `anthropic/claude-3-haiku` (faster, lower cost)
-   - `openai/gpt-4-turbo` (alternative option)
-3. **API_KEY**: Generate a secure random string for authentication:
-   ```bash
-   python -c "import secrets; print(secrets.token_urlsafe(32))"
-   ```
-4. **ALLOWED_ORIGINS**: Update with your production domain when deploying
-
-## Step 4: Run the AI Agent Locally
-
-### Option A: Run with Uvicorn (Development)
-
-```bash
-# Make sure you're in the RecipeApp_AI directory with venv activated
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The service will start on `http://localhost:8000`
-
-### Option B: Run with Docker Compose (Production-like)
-
-```bash
-# Build and start the service
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop the service
-docker compose down
-```
-
-### Verify the Service is Running
-
-Open your browser or use curl to test the health endpoint:
-
-```bash
-curl http://localhost:8000/health
-```
-
-You should see a response like:
-```json
-{
-  "status": "healthy",
-  "version": "1.0.0",
-  "timestamp": "2025-11-15T12:00:00.000000"
+    /* Semantic */
+    --text-primary: #2c3e50;
+    --text-secondary: #6c757d;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --border: #dee2e6;
 }
 ```
 
-View interactive API documentation at: `http://localhost:8000/docs`
+### Typography System
+```css
+/* Headings */
+h1 { font-size: 2.5rem; font-weight: 600; }
+h2 { font-size: 2rem; font-weight: 600; }
+h3 { font-size: 1.75rem; font-weight: 600; }
+h4 { font-size: 1.5rem; font-weight: 500; }
+h5 { font-size: 1.25rem; font-weight: 500; }
 
-## Step 5: Integrate with the Flask Application
-
-### Add AI Client Helper Module
-
-Create a new file `ai_client.py` in your Flask app directory (`family-recipe-app/`):
-
-```python
-import os
-import requests
-from typing import List, Dict, Optional
-import logging
-
-logger = logging.getLogger(__name__)
-
-class AIServiceClient:
-    """Client for communicating with the AI microservice."""
-
-    def __init__(self):
-        self.base_url = os.getenv('AI_SERVICE_URL', 'http://localhost:8000')
-        self.api_key = os.getenv('AI_SERVICE_API_KEY', '')
-        self.timeout = 30  # seconds
-
-    def _make_request(self, endpoint: str, data: dict) -> Optional[dict]:
-        """Make a POST request to the AI service."""
-        try:
-            headers = {
-                'X-API-Key': self.api_key,
-                'Content-Type': 'application/json'
-            }
-            response = requests.post(
-                f"{self.base_url}{endpoint}",
-                json=data,
-                headers=headers,
-                timeout=self.timeout
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"AI Service request failed: {e}")
-            return None
-
-    def get_recipe_suggestions(
-        self,
-        ingredients: List[str],
-        dietary_restrictions: Optional[List[str]] = None,
-        excluded_ingredients: Optional[List[str]] = None
-    ) -> Optional[List[Dict]]:
-        """Get AI-generated recipe suggestions based on ingredients."""
-        data = {
-            'ingredients': ingredients,
-            'dietary_restrictions': dietary_restrictions or [],
-            'excluded_ingredients': excluded_ingredients or []
-        }
-        result = self._make_request('/api/ai/recipe-suggestions', data)
-        return result.get('suggestions') if result else None
-
-    def parse_recipe_text(self, recipe_text: str) -> Optional[Dict]:
-        """Parse unstructured recipe text into structured data."""
-        data = {'recipe_text': recipe_text}
-        result = self._make_request('/api/ai/recipe-parsing', data)
-        return result.get('parsed_recipe') if result else None
-
-# Create a singleton instance
-ai_client = AIServiceClient()
+/* Body */
+body { font-size: 1rem; line-height: 1.6; }
+.text-small { font-size: 0.875rem; }
+.text-large { font-size: 1.125rem; }
 ```
 
-### Update Flask App Configuration
-
-Add to `config.py`:
-
-```python
-# AI Service Configuration
-AI_SERVICE_URL = os.environ.get('AI_SERVICE_URL', 'http://localhost:8000')
-AI_SERVICE_API_KEY = os.environ.get('AI_SERVICE_API_KEY', '')
-```
-
-Update your Flask app's `.env` file (or create one in `family-recipe-app/`):
-
-```env
-# Add these lines to your existing .env
-AI_SERVICE_URL=http://localhost:8000
-AI_SERVICE_API_KEY=your_secure_api_key_here
-```
-
-**Note**: The `AI_SERVICE_API_KEY` should match the `API_KEY` you set in the AI agent's `.env` file.
-
-### Add AI-Powered Routes to Flask App
-
-Add these routes to `app.py`:
-
-```python
-from ai_client import ai_client
-
-@app.route('/ai/suggest-recipes', methods=['POST'])
-@login_required
-def ai_suggest_recipes():
-    """Get AI recipe suggestions based on ingredients."""
-    data = request.get_json()
-    ingredients = data.get('ingredients', [])
-    dietary_restrictions = data.get('dietary_restrictions', [])
-
-    suggestions = ai_client.get_recipe_suggestions(
-        ingredients=ingredients,
-        dietary_restrictions=dietary_restrictions
-    )
-
-    if suggestions:
-        return {'success': True, 'suggestions': suggestions}
-    else:
-        return {'success': False, 'error': 'AI service unavailable'}, 503
-
-@app.route('/ai/parse-recipe', methods=['POST'])
-@login_required
-def ai_parse_recipe():
-    """Parse recipe text using AI."""
-    data = request.get_json()
-    recipe_text = data.get('recipe_text', '')
-
-    parsed = ai_client.parse_recipe_text(recipe_text)
-
-    if parsed:
-        return {'success': True, 'parsed_recipe': parsed}
-    else:
-        return {'success': False, 'error': 'AI service unavailable'}, 503
-```
-
-### Add Requests Library Dependency
-
-Update `requirements.txt` in the Flask app:
-
-```bash
-# Add this line if not already present
-requests>=2.31.0
-```
-
-Then install:
-```bash
-pip install requests
-```
-
-## Step 6: Create Frontend Integration (Optional)
-
-### Example: Recipe Suggestion Form
-
-Create a new template `templates/ai_suggestions.html`:
-
-```html
-{% extends "base.html" %}
-
-{% block content %}
-<div class="container mt-5">
-    <h2>AI Recipe Suggestions</h2>
-    <form id="suggestionForm">
-        <div class="mb-3">
-            <label class="form-label">Available Ingredients (one per line)</label>
-            <textarea class="form-control" id="ingredients" rows="5"
-                      placeholder="chicken breast&#10;garlic&#10;olive oil&#10;tomatoes"></textarea>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Dietary Restrictions (optional)</label>
-            <input type="text" class="form-control" id="dietary"
-                   placeholder="e.g., vegetarian, gluten-free">
-        </div>
-        <button type="submit" class="btn btn-primary">Get Suggestions</button>
-    </form>
-
-    <div id="results" class="mt-4"></div>
-</div>
-
-<script>
-document.getElementById('suggestionForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const ingredients = document.getElementById('ingredients').value
-        .split('\n')
-        .filter(i => i.trim());
-    const dietary = document.getElementById('dietary').value
-        .split(',')
-        .map(d => d.trim())
-        .filter(d => d);
-
-    const response = await fetch('/ai/suggest-recipes', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            ingredients: ingredients,
-            dietary_restrictions: dietary
-        })
-    });
-
-    const data = await response.json();
-
-    if (data.success) {
-        displayResults(data.suggestions);
-    } else {
-        alert('Error: ' + data.error);
-    }
-});
-
-function displayResults(suggestions) {
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = '<h3>Suggested Recipes</h3>';
-
-    suggestions.forEach(recipe => {
-        resultsDiv.innerHTML += `
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5>${recipe.title}</h5>
-                    <p>${recipe.description}</p>
-                    <p><strong>Time:</strong> ${recipe.prep_time + recipe.cook_time} minutes</p>
-                </div>
-            </div>
-        `;
-    });
-}
-</script>
-{% endblock %}
-```
-
-Add a route in `app.py`:
-
-```python
-@app.route('/ai-suggestions')
-@login_required
-def ai_suggestions_page():
-    return render_template('ai_suggestions.html')
-```
-
-## Step 7: Testing the Integration
-
-### Test the AI Service Endpoints
-
-```bash
-# Test recipe suggestions
-curl -X POST http://localhost:8000/api/ai/recipe-suggestions \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your_api_key_here" \
-  -d '{
-    "ingredients": ["chicken", "garlic", "olive oil"],
-    "dietary_restrictions": ["gluten-free"],
-    "excluded_ingredients": []
-  }'
-
-# Test recipe parsing
-curl -X POST http://localhost:8000/api/ai/recipe-parsing \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your_api_key_here" \
-  -d '{
-    "recipe_text": "Mix 2 cups flour with 1 cup water. Bake at 350F for 30 minutes."
-  }'
-```
-
-### Test the Flask Integration
-
-1. Start both services:
-   ```bash
-   # Terminal 1: AI Agent
-   cd RecipeApp_AI
-   source venv/bin/activate
-   uvicorn main:app --reload --port 8000
-
-   # Terminal 2: Flask App
-   cd family-recipe-app
-   source venv/bin/activate
-   python app.py
-   ```
-
-2. Test via Flask routes (use the interactive docs or your frontend)
-
-## Step 8: Production Deployment
-
-### Deploy AI Agent to DigitalOcean (Recommended)
-
-The RecipeApp_AI repository includes a deployment script for DigitalOcean:
-
-```bash
-# Set your droplet IP
-export DROPLET_IP=your.droplet.ip.address
-
-# Run the deployment script
-chmod +x deploy.sh
-./deploy.sh
-```
-
-Or use DigitalOcean App Platform:
-1. Connect your GitHub repository
-2. Set environment variables in the App Platform dashboard
-3. Deploy directly from git
-
-### Update Flask App Configuration for Production
-
-Update your production environment variables:
-
-```env
-AI_SERVICE_URL=https://your-ai-service-domain.com
-AI_SERVICE_API_KEY=your_production_api_key
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**1. Connection Refused Error**
-- Ensure the AI service is running on port 8000
-- Check firewall settings
-- Verify `AI_SERVICE_URL` is correct
-
-**2. Authentication Failed (401)**
-- Verify API keys match between Flask app and AI service
-- Check the `X-API-Key` header is being sent correctly
-
-**3. OpenRouter API Errors**
-- Verify your OpenRouter API key is valid
-- Check your OpenRouter account has sufficient credits
-- Review the AI service logs for detailed error messages
-
-**4. CORS Errors**
-- Update `ALLOWED_ORIGINS` in the AI service `.env` file
-- Include all domains that will access the API
-
-### Viewing Logs
-
-```bash
-# AI Service logs (if running with uvicorn)
-# Logs appear in the terminal
-
-# AI Service logs (if running with Docker)
-docker compose logs -f
-
-# Flask app logs
-# Check your Flask app's logging configuration
-```
-
-## Security Considerations
-
-1. **API Keys**: Never commit API keys to version control
-2. **HTTPS**: Use HTTPS in production for all API communication
-3. **Rate Limiting**: Consider adding rate limiting to AI endpoints
-4. **Input Validation**: Validate all user inputs before sending to AI service
-5. **Environment Files**: Add `.env` to `.gitignore`
-
-## Cost Management
-
-OpenRouter charges based on usage:
-- Monitor your usage on the OpenRouter dashboard
-- Set up billing alerts
-- Consider caching frequent requests
-- Choose cost-effective models (e.g., Claude 3 Haiku for simple tasks)
+---
+
+## Accessibility Improvements
+
+1. **Keyboard Navigation**
+   - All interactive elements keyboard accessible
+   - Visible focus indicators
+   - Skip to main content link
+
+2. **Screen Reader Support**
+   - Proper ARIA labels
+   - Semantic HTML
+   - Alt text for all images
+
+3. **Color Contrast**
+   - WCAG AA compliance minimum
+   - Don't rely on color alone for information
+
+4. **Form Accessibility**
+   - Associated labels for all inputs
+   - Clear error messages
+   - Helpful placeholder text
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+- Model validation
+- Form validation
+- Utility functions (unit conversion, parsing)
+
+### Integration Tests
+- Recipe CRUD operations
+- User authentication flow
+- Search and filter functionality
+- Image upload process
+
+### End-to-End Tests
+- User registration → login → create recipe → view recipe
+- Search → filter → view results
+- Mobile responsiveness testing
+
+### Performance Tests
+- Load testing with many recipes (1000+)
+- Image upload performance
+- Search query performance
+- Page load time optimization
+
+---
+
+## Monitoring & Analytics
+
+### User Analytics
+- Most viewed recipes
+- Most favorited recipes
+- Search queries (popular ingredients)
+- Recipe creation rate
+- Active users
+
+### Performance Monitoring
+- Page load times
+- Error rates
+- Database query performance
+- Image load times
+
+### Error Tracking
+- Application errors
+- Failed uploads
+- Failed searches
+- User-reported issues
+
+---
+
+## Documentation Needs
+
+1. **User Guide**
+   - How to create a recipe
+   - How to search and filter
+   - How to use collections
+   - Mobile app usage
+
+2. **Admin Guide**
+   - Database backup procedures
+   - User management
+   - Recipe moderation (if needed)
+
+3. **Developer Documentation**
+   - Setup instructions
+   - API documentation
+   - Database schema
+   - Deployment guide
+
+---
+
+## Questions for Stakeholders
+
+1. **Features**: Which features are most important to your family?
+2. **Privacy**: Should recipes be private, family-only, or optionally public?
+3. **Moderation**: Do you need content moderation or trust-based system?
+4. **Storage**: What's the expected number of recipes? (affects hosting)
+5. **Images**: Average number of images per recipe?
+6. **Mobile**: What percentage of users will be mobile?
+7. **Printing**: Is print functionality important?
+8. **Import**: Do family members have existing recipe collections to import?
+
+---
 
 ## Next Steps
 
-1. **Enhance UI**: Add more polished frontend components for AI features
-2. **Caching**: Implement caching for common ingredient combinations
-3. **Background Jobs**: Use Celery for long-running AI requests
-4. **Analytics**: Track which AI features are most used
-5. **Error Handling**: Add more robust error handling and user feedback
+1. Review this document with stakeholders
+2. Prioritize features based on family needs
+3. Fix critical bugs first
+4. Start with Phase 1 implementation
+5. Gather user feedback after each phase
+6. Iterate based on actual usage patterns
 
-## Resources
+---
 
-- [RecipeApp_AI GitHub Repository](https://github.com/cdobratz/RecipeApp_AI)
-- [OpenRouter Documentation](https://openrouter.ai/docs)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-
-## Support
-
-If you encounter issues:
-1. Check the AI service logs for errors
-2. Verify all environment variables are set correctly
-3. Test the AI service endpoints independently before integrating
-4. Review the OpenRouter dashboard for API usage and errors
+*Document created: 2025-11-15*
+*Last updated: 2025-11-15*
