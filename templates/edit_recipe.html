@@ -51,12 +51,53 @@
                     </div>
                 </div>
 
+                <div class="mb-4">
+                    <label class="form-label">Ingredients</label>
+                    <div id="ingredients-container" data-ingredient-count="{{ form.ingredients|length if form.ingredients else 0 }}">
+                        {% if form.ingredients %}
+                            {% for ingredient in form.ingredients %}
+                            <div class="ingredient-entry mb-3">
+                                <div class="row align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Quantity</label>
+                                        {{ ingredient.ingredient_quantity(class="form-control") }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Unit</label>
+                                        {{ ingredient.ingredient_unit(class="form-control") }}
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">Name</label>
+                                        {{ ingredient.ingredient_name(class="form-control") }}
+                                    </div>
+                                    <div class="col-md-1 d-flex align-items-end">
+                                        <button type="button" class="btn btn-danger remove-ingredient mb-3">×</button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" id="add-ingredient" class="btn btn-secondary mt-2">Add Ingredient</button>
+                </div>
+
                 <div class="mb-3">
                     {{ form.instructions.label(class="form-label") }}
                     {{ form.instructions(class="form-control", rows=10) }}
                     {% for error in form.instructions.errors %}
                     <span class="text-danger">{{ error }}</span>
                     {% endfor %}
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        {{ form.meal_tags.label(class="form-label") }}
+                        {{ form.meal_tags(class="form-select") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.diet_tags.label(class="form-label") }}
+                        {{ form.diet_tags(class="form-select") }}
+                    </div>
                 </div>
 
                 <div class="mb-3">
@@ -67,4 +108,86 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    console.log('Edit recipe page - Document ready');
+
+    const container = $('#ingredients-container');
+    const addButton = $('#add-ingredient');
+    let ingredientIndex = parseInt(container.data('ingredient-count')) || 0;
+
+    console.log('Initial ingredient index:', ingredientIndex);
+
+    function createIngredientFields() {
+        console.log('Adding new ingredient row');
+
+        const newEntry = $(`
+            <div class="ingredient-entry mb-3">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label" for="ingredients-${ingredientIndex}-ingredient_quantity">Quantity</label>
+                        <input class="form-control" required type="text"
+                               id="ingredients-${ingredientIndex}-ingredient_quantity"
+                               name="ingredients-${ingredientIndex}-ingredient_quantity">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="ingredients-${ingredientIndex}-ingredient_unit">Unit</label>
+                        <select class="form-control" required
+                                id="ingredients-${ingredientIndex}-ingredient_unit"
+                                name="ingredients-${ingredientIndex}-ingredient_unit">
+                            <option value="">Select Unit</option>
+                            <option value="cup">Cup(s)</option>
+                            <option value="tbsp">Tablespoon(s)</option>
+                            <option value="tsp">Teaspoon(s)</option>
+                            <option value="oz">Ounce(s)</option>
+                            <option value="lb">Pound(s)</option>
+                            <option value="g">Gram(s)</option>
+                            <option value="ml">Milliliter(s)</option>
+                            <option value="piece">Piece(s)</option>
+                            <option value="pinch">Pinch</option>
+                            <option value="whole">Whole</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label" for="ingredients-${ingredientIndex}-ingredient_name">Name</label>
+                        <input class="form-control" required type="text"
+                               id="ingredients-${ingredientIndex}-ingredient_name"
+                               name="ingredients-${ingredientIndex}-ingredient_name">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" class="btn btn-danger remove-ingredient mb-3">×</button>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        container.append(newEntry);
+        ingredientIndex++;
+        console.log('New ingredient row added, index:', ingredientIndex);
+    }
+
+    // Add ingredient button click handler
+    addButton.on('click', function(e) {
+        e.preventDefault();
+        console.log('Add ingredient button clicked');
+        createIngredientFields();
+    });
+
+    // Remove ingredient button click handler using event delegation
+    container.on('click', '.remove-ingredient', function(e) {
+        e.preventDefault();
+        console.log('Remove ingredient button clicked');
+        $(this).closest('.ingredient-entry').remove();
+    });
+
+    // Add initial ingredient row if none exist
+    if (ingredientIndex === 0) {
+        console.log('Adding initial ingredient row');
+        createIngredientFields();
+    }
+});
+</script>
 {% endblock %}

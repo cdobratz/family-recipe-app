@@ -226,19 +226,27 @@ def recipe(recipe_id):
 @login_required
 def recipes():
     search_query = request.args.get('q', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 12  # Show 12 recipes per page
+
     if search_query:
         # Search in title, description, and instructions
         search = f"%{search_query}%"
-        recipes = Recipe.query.filter(
+        pagination = Recipe.query.filter(
             (Recipe.title.ilike(search)) |
             (Recipe.description.ilike(search)) |
             (Recipe.instructions.ilike(search))
-        ).order_by(Recipe.created_at.desc()).all()
+        ).order_by(Recipe.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
     else:
-        # Get the latest 5 recipes if no search query
-        recipes = Recipe.query.order_by(Recipe.created_at.desc()).limit(5).all()
-    
-    return render_template('recipes.html', recipes=recipes, search_query=search_query)
+        # Get all recipes with pagination
+        pagination = Recipe.query.order_by(Recipe.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+
+    recipes = pagination.items
+    return render_template('recipes.html', recipes=recipes, pagination=pagination, search_query=search_query)
 
 
 @app.route('/recipe/<int:recipe_id>/edit', methods=['GET', 'POST'])
@@ -248,21 +256,66 @@ def edit_recipe(recipe_id):
     if recipe is None:
         flash('Recipe not found.', 'error')
         return redirect(url_for('recipes'))
-    
+
     if recipe.author != current_user:
         flash('You can only edit your own recipes.', 'error')
         return redirect(url_for('recipe', recipe_id=recipe_id))
-    
+
     form = RecipeForm(obj=recipe)
+
+    if request.method == 'GET':
+        # Populate ingredients in the form
+        form.ingredients.entries.clear()
+        for recipe_ingredient in recipe.ingredients:
+            ingredient_form = IngredientForm()
+            ingredient_form.ingredient_quantity.data = float(recipe_ingredient.quantity)
+            ingredient_form.ingredient_unit.data = recipe_ingredient.unit
+            ingredient_form.ingredient_name.data = recipe_ingredient.ingredient.name
+            form.ingredients.append_entry(ingredient_form.data)
+
+        # Populate tags
+        form.meal_tags.data = [tag.id for tag in recipe.tags if tag.tag_type.name == 'meal']
+        form.diet_tags.data = [tag.id for tag in recipe.tags if tag.tag_type.name == 'diet']
+
     if form.validate_on_submit():
         try:
+            # Update basic recipe fields
             recipe.title = form.title.data
             recipe.description = form.description.data
             recipe.instructions = form.instructions.data
             recipe.prep_time_minutes = form.prep_time_minutes.data
             recipe.cook_time_minutes = form.cook_time_minutes.data
             recipe.servings = form.servings.data
-            
+
+            # Delete existing ingredients
+            RecipeIngredient.query.filter_by(recipe_id=recipe_id).delete()
+
+            # Add updated ingredients
+            for ingredient_form in form.ingredients.entries:
+                if ingredient_form.ingredient_name.data.strip():
+                    # Get or create ingredient
+                    ingredient = Ingredient.query.filter_by(name=ingredient_form.ingredient_name.data).first()
+                    if not ingredient:
+                        ingredient = Ingredient(name=ingredient_form.ingredient_name.data)
+                        db.session.add(ingredient)
+                        db.session.flush()
+
+                    # Create recipe ingredient relationship
+                    recipe_ingredient = RecipeIngredient(
+                        recipe_id=recipe.id,
+                        ingredient_id=ingredient.id,
+                        quantity=float(ingredient_form.ingredient_quantity.data) if ingredient_form.ingredient_quantity.data else 0,
+                        unit=ingredient_form.ingredient_unit.data
+                    )
+                    db.session.add(recipe_ingredient)
+
+            # Update tags
+            recipe.tags = []
+            if form.meal_tags.data:
+                recipe.tags.extend(Tag.query.filter(Tag.id.in_(form.meal_tags.data)).all())
+            if form.diet_tags.data:
+                recipe.tags.extend(Tag.query.filter(Tag.id.in_(form.diet_tags.data)).all())
+
             db.session.commit()
             logger.info(f'Recipe {recipe_id} updated by user {current_user.id}')
             flash('Recipe has been updated!', 'success')
@@ -271,10 +324,10 @@ def edit_recipe(recipe_id):
             logger.error(f'Error updating recipe {recipe_id}: {str(e)}')
             db.session.rollback()
             flash('An error occurred while updating the recipe.', 'error')
-    
+
     if form.errors:
         logger.warning(f'Form validation errors: {form.errors}')
-    
+
     return render_template('edit_recipe.html', title='Edit Recipe', form=form, recipe=recipe)
 
 
