@@ -4,6 +4,17 @@
 
 {% block content %}
 <div class="container">
+    <div class="row mb-3">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('recipes') }}">Recipes</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ recipe.title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <div class="card">
@@ -50,6 +61,17 @@
                             {{ recipe.instructions|nl2br|safe }}
                         </div>
                     </div>
+
+                    {% if recipe.tags %}
+                    <div class="mb-4">
+                        <h5>Tags</h5>
+                        <div class="tags">
+                            {% for tag in recipe.tags %}
+                            <span class="badge bg-primary me-2">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
 
                     {% if recipe.categories %}
                     <div class="mb-4">

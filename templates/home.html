@@ -7,7 +7,9 @@
     <div class="row mb-4 align-items-center">
         <div class="col-md-8">
             <h1 class="mb-0">Your Recipe Collection</h1>
-            <p class="text-muted mb-0">Discover and manage your favorite family recipes</p>
+            <p class="text-muted mb-0">
+                {{ recipes|length }} recipe{{ 's' if recipes|length != 1 else '' }} in your collection
+            </p>
         </div>
         <div class="col-md-4 text-md-end mt-3 mt-md-0">
             <a href="{{ url_for('new_recipe') }}" class="btn btn-primary">

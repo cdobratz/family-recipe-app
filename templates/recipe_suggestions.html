@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Recipe Suggestions - Family Recipe App{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0">Recipe Suggestions</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Enter ingredients you have on hand, and our AI will suggest recipes you can make!
+                    </p>
+                    
+                    <form id="suggestionForm">
+                        <div class="mb-3">
+                            <label for="ingredients" class="form-label">Ingredients</label>
+                            <div class="ingredient-input-container mb-2">
+                                <div class="input-group">
+                                    <input type="text" class="form-control ingredient-input" placeholder="Add an ingredient">
+                                    <button type="button" class="btn btn-outline-primary add-ingredient">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="ingredientChips" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            <div class="form-text">Enter ingredients one at a time and press + or Enter.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Dietary Preferences</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="vegetarian" value="vegetarian">
+                                    <label class="form-check-label" for="vegetarian">Vegetarian</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="vegan" value="vegan">
+                                    <label class="form-check-label" for="vegan">Vegan</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="gluten-free" value="gluten-free">
+                                    <label class="form-check-label" for="gluten-free">Gluten-Free</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="dairy-free" value="dairy-free">
+                                    <label class="form-check-label" for="dairy-free">Dairy-Free</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="excludedIngredients" class="form-label">Exclude Ingredients (Optional)</label>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" id="excludedIngredient" placeholder="Add ingredient to exclude">
+                                <button type="button" class="btn btn-outline-secondary add-excluded">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="excludedChips" class="d-flex flex-wrap gap-2 mt-2"></div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="getRecipesBtn">
+                                <i class="fas fa-magic me-2"></i>Get Recipe Suggestions
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-8">
+            <div id="loadingIndicator" class="d-none text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Getting suggestions from our AI...</p>
+            </div>
+            
+            <div id="errorMessage" class="alert alert-danger d-none"></div>
+            
+            <div id="suggestionsContainer" class="d-none">
+                <h3 class="mb-4">Suggested Recipes</h3>
+                <div id="recipesList" class="row g-4"></div>
+            </div>
+            
+            <div id="noResultsMessage" class="alert alert-info d-none">
+                <i class="fas fa-info-circle me-2"></i>
+                No recipe suggestions found for these ingredients. Try adding more ingredients or changing your criteria.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="recipeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recipeModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="recipeModalBody">
+                <!-- Recipe details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveRecipeBtn">Save to My Recipes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables to store ingredients
+    let ingredients = [];
+    let excludedIngredients = [];
+    let dietaryPreferences = [];
+    
+    // DOM elements
+    const ingredientInput = document.querySelector('.ingredient-input');
+    const addIngredientBtn = document.querySelector('.add-ingredient');
+    const ingredientChips = document.getElementById('ingredientChips');
+    const excludedInput = document.getElementById('excludedIngredient');
+    const addExcludedBtn = document.querySelector('.add-excluded');
+    const excludedChips = document.getElementById('excludedChips');
+    const suggestionForm = document.getElementById('suggestionForm');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const errorMessage = document.getElementById('errorMessage');
+    const suggestionsContainer = document.getElementById('suggestionsContainer');
+    const recipesList = document.getElementById('recipesList');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    const dietCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+    
+    // Modal elements
+    const recipeModal = document.getElementById('recipeModal');
+    const recipeModalTitle = document.getElementById('recipeModalTitle');
+    const recipeModalBody = document.getElementById('recipeModalBody');
+    const saveRecipeBtn = document.getElementById('saveRecipeBtn');
+    
+    // Function to add ingredient
+    function addIngredient() {
+        const value = ingredientInput.value.trim();
+        if (value && !ingredients.includes(value)) {
+            ingredients.push(value);
+            renderIngredientChips();
+            ingredientInput.value = '';
+        }
+        ingredientInput.focus();
+    }
+    
+    // Function to add excluded ingredient
+    function addExcludedIngredient() {
+        const value = excludedInput.value.trim();
+        if (value && !excludedIngredients.includes(value)) {
+            excludedIngredients.push(value);
+            renderExcludedChips();
+            excludedInput.value = '';
+        }
+        excludedInput.focus();
+    }
+    
+    // Render ingredient chips
+    function renderIngredientChips() {
+        ingredientChips.innerHTML = ingredients.map(ing => 
+            `<div class="badge bg-primary d-flex align-items-center">
+                ${ing}
+                <button type="button" class="btn-close btn-close-white ms-2" 
+                        aria-label="Remove" data-ingredient="${ing}"></button>
+            </div>`
+        ).join('');
+        
+        // Add event listeners to remove buttons
+        document.querySelectorAll('#ingredientChips .btn-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const ing = this.getAttribute('data-ingredient');
+                ingredients = ingredients.filter(i => i !== ing);
+                renderIngredientChips();
+            });
+        });
+    }
+    
+    // Render excluded ingredient chips
+    function renderExcludedChips() {
+        excludedChips.innerHTML = excludedIngredients.map(ing => 
+            `<div class="badge bg-secondary d-flex align-items-center">
+                ${ing}
+                <button type="button" class="btn-close btn-close-white ms-2" 
+                        aria-label="Remove" data-excluded="${ing}"></button>
+            </div>`
+        ).join('');
+        
+        // Add event listeners to remove buttons
+        document.querySelectorAll('#excludedChips .btn-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const ing = this.getAttribute('data-excluded');
+                excludedIngredients = excludedIngredients.filter(i => i !== ing);
+                renderExcludedChips();
+            });
+        });
+    }
+    
+    // Handle Enter key for ingredient input
+    ingredientInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addIngredient();
+        }
+    });
+    
+    // Handle Enter key for excluded ingredient input
+    excludedInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addExcludedIngredient();
+        }
+    });
+    
+    // Button event listeners
+    addIngredientBtn.addEventListener('click', addIngredient);
+    addExcludedBtn.addEventListener('click', addExcludedIngredient);
+    
+    // Handle dietary preference checkboxes
+    dietCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                dietaryPreferences.push(this.value);
+            } else {
+                dietaryPreferences = dietaryPreferences.filter(pref => pref !== this.value);
+            }
+        });
+    });
+    
+    // Handle form submission
+    suggestionForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (ingredients.length === 0) {
+            errorMessage.textContent = 'Please add at least one ingredient.';
+            errorMessage.classList.remove('d-none');
+            return;
+        }
+        
+        // Hide any previous error messages and show loading
+        errorMessage.classList.add('d-none');
+        suggestionsContainer.classList.add('d-none');
+        noResultsMessage.classList.add('d-none');
+        loadingIndicator.classList.remove('d-none');
+        
+        // Prepare request data
+        const requestData = {
+            ingredients: ingredients
+        };
+        
+        if (dietaryPreferences.length > 0) {
+            requestData.dietary_preferences = dietaryPreferences;
+        }
+        
+        if (excludedIngredients.length > 0) {
+            requestData.excluded_ingredients = excludedIngredients;
+        }
+        
+        // Make API request
+        fetch('/api/recipes/suggest', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to get recipe suggestions');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            loadingIndicator.classList.add('d-none');
+            
+            if (data.suggestions && data.suggestions.length > 0) {
+                renderRecipeSuggestions(data.suggestions);
+                suggestionsContainer.classList.remove('d-none');
+            } else {
+                noResultsMessage.classList.remove('d-none');
+            }
+        })
+        .catch(error => {
+            loadingIndicator.classList.add('d-none');
+            errorMessage.textContent = error.message;
+            errorMessage.classList.remove('d-none');
+        });
+    });
+    
+    // Render recipe suggestions
+    function renderRecipeSuggestions(suggestions) {
+        recipesList.innerHTML = suggestions.map((recipe, index) => `
+            <div class="col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">${recipe.title}</h5>
+                        <p class="card-text small">${recipe.description}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i> ${recipe.cooking_time_minutes} min
+                            </small>
+                            <small class="text-muted">
+                                <i class="fas fa-utensils me-1"></i> ${recipe.servings || 2} servings
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary view-recipe" 
+                                    data-recipe-index="${index}">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add event listeners to view recipe buttons
+        document.querySelectorAll('.view-recipe').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = this.getAttribute('data-recipe-index');
+                showRecipeModal(suggestions[index]);
+            });
+        });
+    }
+    
+    // Show recipe modal
+    function showRecipeModal(recipe) {
+        recipeModalTitle.textContent = recipe.title;
+        
+        // Format recipe details
+        const ingredients = recipe.ingredients.map(ing => 
+            `<li>${ing.quantity ? ing.quantity : ''} ${ing.unit || ''} ${ing.name}</li>`
+        ).join('');
+        
+        const instructions = recipe.instructions.map(step => 
+            `<li>${step}</li>`
+        ).join('');
+        
+        recipeModalBody.innerHTML = `
+            <p>${recipe.description}</p>
+            
+            <div class="row mb-3">
+                <div class="col-6">
+                    <div class="d-flex align-items-center">
+                        <i class="far fa-clock me-2 text-muted"></i>
+                        <div>
+                            <div class="fw-bold">Cook Time</div>
+                            <div>${recipe.cooking_time
+
